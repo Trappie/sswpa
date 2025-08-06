@@ -231,25 +231,23 @@
         
         // Throttle scroll events for better performance
         let ticking = false;
+        let scrollDirection = 'down';
         
         function updateHeader() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             
-            // Define clear hysteresis thresholds
-            const HIDE_LARGE_LOGO_AT = 120;  // When scrolling down, hide large logo at 120px
-            const SHOW_LARGE_LOGO_AT = 80;   // When scrolling up, show large logo at 80px
-            // Dead zone: 80px - 120px (maintain whatever state you're currently in)
+            // Simple threshold-based approach since header is now fixed
+            const THRESHOLD = 100;
             
-            if (currentState === 'large' && scrollTop > HIDE_LARGE_LOGO_AT) {
-                // Currently showing large logo, and scrolled past hide threshold
+            if (scrollTop > THRESHOLD && currentState === 'large') {
+                // Scrolled past threshold - show compact header
                 header.classList.add('scrolled');
                 currentState = 'small';
-            } else if (currentState === 'small' && scrollTop < SHOW_LARGE_LOGO_AT) {
-                // Currently showing small logo, and scrolled above show threshold
+            } else if (scrollTop <= THRESHOLD && currentState === 'small') {
+                // Scrolled back to top - show large header
                 header.classList.remove('scrolled');
                 currentState = 'large';
             }
-            // Between 80px and 120px: maintain current state (no changes to DOM)
             
             lastScrollTop = scrollTop;
         }

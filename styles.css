@@ -34,6 +34,7 @@ body {
   color: var(--text-primary);
   background-color: var(--background-light);
   font-weight: 400;
+  padding-top: 200px; /* Space for fixed header - will adjust dynamically */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -108,8 +109,10 @@ a:hover {
 .header {
   background: var(--background-white);
   box-shadow: var(--shadow-subtle);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   transition: all 0.3s ease;
 }
@@ -152,12 +155,13 @@ a:hover {
 
 /* Small logo for scrolled state */
 .nav-logo {
-  display: none;
   position: absolute;
   left: 2rem;
   height: 40px;
   width: auto;
-  /* No transition on display property to prevent overlap */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* Alternative inverted logo using CSS background */
@@ -190,12 +194,13 @@ a:hover {
 
 /* SVG-based inverted logo */
 .nav-logo-svg {
-  display: none;
   position: absolute;
   left: 2rem;
   height: 40px;
   width: 40px;
-  transition: all 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 /* Scrolled state */
@@ -212,11 +217,15 @@ a:hover {
 }
 
 .header.scrolled .nav-logo {
-  display: block;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.15s;
 }
 
 .header.scrolled .nav-logo-svg {
-  display: block;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.15s;
 }
 
 .header.scrolled .nav-menu {
