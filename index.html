@@ -225,7 +225,7 @@
 
         // Header scroll behavior - Steinway style
         let lastScrollTop = 0;
-        let isScrolled = false;
+        let currentState = 'large'; // 'large' or 'small'
         const header = document.querySelector('.header');
         const logoSection = document.querySelector('.logo-section');
         
@@ -235,28 +235,32 @@
         function updateHeader() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             
-            // Get the logo section height when not scrolled
-            const logoSectionHeight = isScrolled ? 140 : logoSection.offsetHeight; // fallback to estimated height
+            // Define clear hysteresis thresholds
+            const HIDE_LARGE_LOGO_AT = 120;  // When scrolling down, hide large logo at 120px
+            const SHOW_LARGE_LOGO_AT = 80;   // When scrolling up, show large logo at 80px
+            // Dead zone: 80px - 120px (maintain whatever state you're currently in)
             
-            // Use a more conservative threshold
-            const threshold = Math.max(logoSectionHeight * 0.8, 100); // At least 100px
-            
-            if (!isScrolled && scrollTop > threshold) {
+            if (currentState === 'large' && scrollTop > HIDE_LARGE_LOGO_AT) {
+                // Currently showing large logo, and scrolled past hide threshold
                 header.classList.add('scrolled');
-                isScrolled = true;
-            } else if (isScrolled && scrollTop < threshold * 0.7) { // Add some hysteresis back
+                currentState = 'small';
+            } else if (currentState === 'small' && scrollTop < SHOW_LARGE_LOGO_AT) {
+                // Currently showing small logo, and scrolled above show threshold
                 header.classList.remove('scrolled');
-                isScrolled = false;
+                currentState = 'large';
             }
+            // Between 80px and 120px: maintain current state (no changes to DOM)
             
             lastScrollTop = scrollTop;
-            ticking = false;
         }
         
         window.addEventListener('scroll', function() {
             if (!ticking) {
-                requestAnimationFrame(updateHeader);
                 ticking = true;
+                requestAnimationFrame(function() {
+                    updateHeader();
+                    ticking = false;
+                });
             }
         });
 

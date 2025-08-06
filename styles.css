@@ -157,7 +157,7 @@ a:hover {
   left: 2rem;
   height: 40px;
   width: auto;
-  transition: all 0.3s ease;
+  /* No transition on display property to prevent overlap */
 }
 
 /* Alternative inverted logo using CSS background */
