@@ -34,7 +34,11 @@ body {
   color: var(--text-primary);
   background-color: var(--background-light);
   font-weight: 400;
-  padding-top: 200px; /* Space for fixed header - will adjust dynamically */
+  margin: 0;
+}
+
+.main-content {
+  margin-top: 0; /* Will be set dynamically by JavaScript */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -576,12 +580,39 @@ a:hover {
   
   .dropdown {
     position: static;
-    opacity: 1;
-    visibility: visible;
+    opacity: 0;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
     transform: none;
     box-shadow: none;
-    background: var(--accent-light);
-    margin-top: 0;
+    background: var(--background-white);
+    margin: 0;
+    padding: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .nav-item:hover .dropdown,
+  .nav-item.active .dropdown {
+    opacity: 1;
+    visibility: visible;
+    height: auto;
+    padding: 0.5rem 0;
+    background: var(--pearl);
+    border-left: 3px solid var(--accent-color);
+  }
+  
+  .dropdown-link {
+    padding: 0.75rem 3rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    background: none;
+  }
+  
+  .dropdown-link:hover {
+    background-color: var(--accent-light);
+    color: var(--primary-color);
+    padding-left: 3.5rem;
   }
   
   .mobile-menu-toggle {
@@ -605,6 +636,7 @@ a:hover {
   .logo-section {
     padding: 0.5rem 0;
   }
+  
   
   .hero {
     padding: 4rem 0;

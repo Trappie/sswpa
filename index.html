@@ -66,6 +66,7 @@
         </nav>
     </header>
 
+    <main class="main-content">
     <!-- Hero Section -->
     <section class="hero section-hero">
         <div class="container">
@@ -207,8 +208,50 @@
             </div>
         </div>
     </footer>
+    </main>
 
     <script>
+        // Dynamic header height calculation
+        function updateMainContentMargin() {
+            console.log(`🔥 TRIGGER: updateMainContentMargin() called at ${new Date().toLocaleTimeString()}`);
+            
+            const header = document.querySelector('.header');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (header && mainContent) {
+                const headerHeight = header.offsetHeight;
+                mainContent.style.marginTop = headerHeight + 'px';
+                
+                // Debug log (can be removed later)
+                console.log(`📐 Header height: ${headerHeight}px, Main content margin updated`);
+            }
+        }
+        
+        // Update on initial load (works for both refresh and address input)
+        console.log('📝 Setting up load event listener');
+        window.addEventListener('load', function() {
+            console.log('🚀 LOAD EVENT triggered');
+            updateMainContentMargin();
+        });
+        
+        // Update on window resize (handles desktop resize and mobile orientation changes)
+        console.log('📝 Setting up resize event listener');
+        window.addEventListener('resize', function() {
+            console.log('🔄 RESIZE EVENT triggered');
+            updateMainContentMargin();
+        });
+        
+        // Update after header state changes (scrolled/unscrolled)
+        function updateHeaderWithMargin() {
+            console.log('📜 SCROLL: updateHeaderWithMargin() called');
+            updateHeader();
+            // Small delay to allow CSS transitions to complete before recalculating
+            setTimeout(() => {
+                console.log('⏰ SCROLL DELAY: Running delayed updateMainContentMargin()');
+                updateMainContentMargin();
+            }, 350);
+        }
+
         // Mobile menu toggle
         document.querySelector('.mobile-menu-toggle').addEventListener('click', function() {
             const navMenu = document.querySelector('.nav-menu');
@@ -217,7 +260,27 @@
 
         // Close mobile menu when clicking on a link
         document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function() {
+            link.addEventListener('click', function(e) {
+                // For mobile: toggle dropdown for parent items
+                if (window.innerWidth <= 768) {
+                    const parentItem = this.closest('.nav-item');
+                    const dropdown = parentItem.querySelector('.dropdown');
+                    
+                    if (dropdown) {
+                        e.preventDefault();
+                        parentItem.classList.toggle('active');
+                        
+                        // Close other open dropdowns
+                        document.querySelectorAll('.nav-item.active').forEach(item => {
+                            if (item !== parentItem) {
+                                item.classList.remove('active');
+                            }
+                        });
+                        return;
+                    }
+                }
+                
+                // Close mobile menu when clicking on a regular link
                 const navMenu = document.querySelector('.nav-menu');
                 navMenu.classList.remove('active');
             });
@@ -256,7 +319,7 @@
             if (!ticking) {
                 ticking = true;
                 requestAnimationFrame(function() {
-                    updateHeader();
+                    updateHeaderWithMargin();
                     ticking = false;
                 });
             }
