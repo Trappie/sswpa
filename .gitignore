@@ -75,3 +75,6 @@ coverage.xml
 # Local development
 .env.dev
 docker-compose.override.yml
+
+# Docker
+.dockerignore
