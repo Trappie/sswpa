@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <!-- Header & Navigation -->
@@ -28,30 +29,30 @@
                     <a href="#" class="nav-link">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Concerts</a>
+                    <a href="#" class="nav-link">About the Steinway Society</a>
+                    <ul class="dropdown">
+                        <li><a href="#" class="dropdown-link">Mission Statement</a></li>
+                        <li><a href="#" class="dropdown-link">Programs</a></li>
+                        <li><a href="#" class="dropdown-link">Board of Directors</a></li>
+                    </ul>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">About</a>
-                    <ul class="dropdown">
-                        <li><a href="#" class="dropdown-link">Mission</a></li>
-                        <li><a href="#" class="dropdown-link">Programs</a></li>
-                        <li><a href="#" class="dropdown-link">Board</a></li>
-                    </ul>
+                    <a href="#" class="nav-link">Purchase Tickets</a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">Young Artists</a>
                     <ul class="dropdown">
-                        <li><a href="#" class="dropdown-link">Young Artist Program</a></li>
+                        <li><a href="#" class="dropdown-link">About the Program</a></li>
+                        <li><a href="#" class="dropdown-link">How to Audition</a></li>
                         <li><a href="#" class="dropdown-link">Heinz Hall Performances</a></li>
                         <li><a href="#" class="dropdown-link">Honors Recitals</a></li>
-                        <li><a href="#" class="dropdown-link">Membership</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">Membership</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Support</a>
+                    <a href="#" class="nav-link">Support the Society</a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">Contact</a>
@@ -72,17 +73,48 @@
         <div class="container">
             <div style="max-width: 900px; margin: 0 auto;">
                 <h1 class="fade-in-up">Celebrating Excellence in Piano Performance</h1>
-                <p class="fade-in-up" style="font-size: 1.125rem; margin-bottom: 3rem;">The Steinway Society of Western Pennsylvania promotes classical piano music through concerts, competitions, and educational programs, fostering the next generation of musical artists.</p>
+                <p class="fade-in-up" style="font-size: 1.125rem; margin-bottom: 3rem;">The Steinway Society of Western Pennsylvania promotes classical piano music through concerts, auditions, and educational programs.</p>
                 <div class="fade-in-up" style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
                     <a href="#" class="btn btn-primary">Upcoming Concerts</a>
-                    <a href="#" class="btn btn-outline">Become a Member</a>
+                    <a href="#" class="btn btn-outline">Young Artists</a>
+                    <a href="#" class="btn btn-member">Become a Member</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Featured Content -->
+    <!-- Concert Series -->
     <section class="section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h2>2025-2026 Recital Series</h2>
+            </div>
+        </div>
+        <div style="width: 100vw; margin: 2rem 0; border-radius: 12px; box-shadow: var(--shadow-elegant); background: url('/static/images/piano_recital_series_2025_2026.jpeg') center/contain no-repeat; aspect-ratio: 16/9; position: relative; left: 50%; transform: translateX(-50%);"></div>
+        <div class="container">
+            
+            
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="#" class="btn btn-primary-light">Purchase Tickets</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="section">
+        <div class="container" style="text-align: center;">
+            <h2>Join the Steinway Society Community</h2>
+            <p style="max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">Support classical piano music and help us continue our mission of promoting excellence in performance and education.</p>
+            
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <a href="#" class="btn btn-primary-light">Become a Member</a>
+                <a href="#" class="btn btn-outline-light">Make a Donation</a>
+                <a href="#" class="btn btn-outline-light">Become a Young Artist</a>
+            </div>
+        </div>
+    </section>
+    <!-- Featured Content -->
+    <section class="section section-alt">
         <div class="container">
             <h2 style="text-align: center; margin-bottom: 3rem;">Latest News & Highlights</h2>
             
@@ -111,61 +143,6 @@
         </div>
     </section>
 
-    <!-- Concert Series -->
-    <section class="section section-alt">
-        <div class="container">
-            <div style="text-align: center; margin-bottom: 3rem;">
-                <h2>2023-2024 Recital Series</h2>
-                <img src="https://www.sswpa.org/uploads/2/2/8/5/22850408/thumbnail-the-steinway-society-20-x-16-in_orig.jpg" 
-                     alt="Steinway Society Recital Series" 
-                     style="max-width: 400px; width: 100%; height: auto; margin: 2rem auto; display: block; border-radius: 12px; box-shadow: var(--shadow-elegant);">
-            </div>
-            
-            <div class="grid grid-2">
-                <div class="card concert-card">
-                    <div class="card-meta">October 29, 2023</div>
-                    <h3 class="card-title">Marina Lomazov</h3>
-                    <p>Internationally acclaimed pianist Marina Lomazov brings her exceptional artistry and technical brilliance to our concert series.</p>
-                </div>
-                
-                <div class="card concert-card">
-                    <div class="card-meta">December 3, 2023</div>
-                    <h3 class="card-title">Melody Quah</h3>
-                    <p>Experience the musical excellence of Melody Quah in an evening of classical piano repertoire.</p>
-                </div>
-                
-                <div class="card concert-card">
-                    <div class="card-meta">January 21, 2024</div>
-                    <h3 class="card-title">Llewellyn Sanchez-Werner</h3>
-                    <p>Join us for an inspiring performance by the talented Llewellyn Sanchez-Werner.</p>
-                </div>
-                
-                <div class="card concert-card">
-                    <div class="card-meta">March 24, 2024</div>
-                    <h3 class="card-title">Brian Woods</h3>
-                    <p>Pianist and WCHOF Director Brian Woods presents an evening of musical artistry and storytelling.</p>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 3rem;">
-                <a href="#" class="btn btn-primary">View All Concerts</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action -->
-    <section class="section">
-        <div class="container" style="text-align: center;">
-            <h2>Join the Steinway Society Community</h2>
-            <p style="max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">Support classical piano music and help us continue our mission of promoting excellence in performance and education.</p>
-            
-            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <a href="#" class="btn btn-primary">Become a Member</a>
-                <a href="#" class="btn btn-outline">Make a Donation</a>
-                <a href="#" class="btn btn-outline">Young Artist Program</a>
-            </div>
-        </div>
-    </section>
 
     <!-- Footer -->
     <footer class="footer">
@@ -173,12 +150,15 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h4>Contact</h4>
-                    <p>Email: info@sswpa.org</p>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <a href="mailto:info@sswpa.org" class="social-link" aria-label="Email"><i class="fas fa-envelope"></i></a>
+                        <a href="mailto:info@sswpa.org">info@sswpa.org</a>
+                    </div>
                 </div>
                 
                 <div class="footer-section">
-                    <h4>Programs</h4>
-                    <ul style="list-style: none;">
+                    <h4>Recital Series</h4>
+                    <ul style="list-style: none; padding-left: 0; margin-left: 0;">
                         <li><a href="#">Concert Series</a></li>
                         <li><a href="#">Young Artist Program</a></li>
                         <li><a href="#">Honors Recitals</a></li>
@@ -188,23 +168,24 @@
                 
                 <div class="footer-section">
                     <h4>Community Partners</h4>
-                    <ul style="list-style: none;">
-                        <li><a href="#">Pittsburgh Concert Society</a></li>
-                        <li><a href="#">Pittsburgh Symphony Orchestra</a></li>
+                    <ul style="list-style: none; padding-left: 0; margin-left: 0;">
+                        <li><a href="https://www.wqed.org">WQED</a></li>
+                        <li><a href="https://pittsburghconcertsociety.org/">Pittsburgh Concert Society</a></li>
+                        <li><a href="https://pittsburghsymphony.org/">Pittsburgh Symphony Orchestra</a></li>
                     </ul>
                 </div>
                 
                 <div class="footer-section">
                     <h4>Follow Us</h4>
                     <div class="social-links">
-                        <a href="#" class="social-link" aria-label="Facebook">f</a>
-                        <a href="#" class="social-link" aria-label="Twitter">𝕏</a>
+                        <a href="https://www.facebook.com/Steinway-Society-of-Western-Pennsylvania-127194341970/" class="social-link" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/steinway_wpa/" class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
             </div>
             
             <div class="footer-bottom">
-                <p>&copy; 2024 Steinway Society of Western Pennsylvania. All rights reserved.</p>
+                <p>&copy; 2025 Steinway Society of Western Pennsylvania. All rights reserved.</p>
             </div>
         </div>
     </footer>
