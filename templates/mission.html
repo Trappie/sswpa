@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steinway Society of Western Pennsylvania</title>
+    <title>Mission Statement - Steinway Society of Western Pennsylvania</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
     <header class="header">
         <div class="logo-section">
             <div class="container">
-                <a href="#" class="logo">
+                <a href="/" class="logo">
                     <img src="/static/images/steinway_society_logo_centered.svg" alt="Steinway Society Logo" class="logo-img">
                 </a>
             </div>
@@ -31,31 +31,31 @@
                 <li class="nav-item">
                     <a href="/about" class="nav-link">About the Steinway Society</a>
                     <ul class="dropdown">
-                        <li><a href="/mission" class="dropdown-link">Mission Statement</a></li>
+                        <li><a href="/mission" class="dropdown-link active">Mission Statement</a></li>
                         <li><a href="/programs" class="dropdown-link">Programs</a></li>
                         <li><a href="/board" class="dropdown-link">Board of Directors</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Purchase Tickets</a>
+                    <a href="/tickets" class="nav-link">Purchase Tickets</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Young Artists</a>
+                    <a href="/young-artists" class="nav-link">Young Artists</a>
                     <ul class="dropdown">
-                        <li><a href="#" class="dropdown-link">About the Program</a></li>
-                        <li><a href="#" class="dropdown-link">How to Audition</a></li>
-                        <li><a href="#" class="dropdown-link">Heinz Hall Performances</a></li>
-                        <li><a href="#" class="dropdown-link">Honors Recitals</a></li>
+                        <li><a href="/young-artists/about" class="dropdown-link">About the Program</a></li>
+                        <li><a href="/young-artists/audition" class="dropdown-link">How to Audition</a></li>
+                        <li><a href="/young-artists/heinz-hall" class="dropdown-link">Heinz Hall Performances</a></li>
+                        <li><a href="/young-artists/honors" class="dropdown-link">Honors Recitals</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Membership</a>
+                    <a href="/membership" class="nav-link">Membership</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Support the Society</a>
+                    <a href="/support" class="nav-link">Support the Society</a>
                 </li>
                 <li class="nav-item">
-                    <a href="#" class="nav-link">Contact</a>
+                    <a href="/contact" class="nav-link">Contact</a>
                 </li>
             </ul>
             
@@ -68,81 +68,22 @@
     </header>
 
     <main class="main-content">
-    <!-- Hero Section -->
-    <section class="hero section-hero">
-        <div class="container">
-            <div style="max-width: 900px; margin: 0 auto;">
-                <h1 class="fade-in-up">Celebrating Excellence in Piano Performance</h1>
-                <p class="fade-in-up" style="font-size: 1.125rem; margin-bottom: 3rem;">The Steinway Society of Western Pennsylvania promotes classical piano music through concerts, auditions, and educational programs.</p>
-                <div class="fade-in-up" style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#" class="btn btn-primary">Upcoming Concerts</a>
-                    <a href="#" class="btn btn-outline">Young Artists</a>
-                    <a href="#" class="btn btn-member">Become a Member</a>
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <h1>Mission Statement</h1>
+            </div>
+        </section>
+
+        <!-- Page Content -->
+        <section class="section">
+            <div class="container">
+                <div class="content-wrapper">
+                    <p>The mission of the Society is to develop, cultivate, and enjoy the many dimensions of the piano by nurturing young pianists, providing educational awards, and presenting national and international professional artists to the community.</p>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Concert Series -->
-    <section class="section">
-        <div class="container">
-            <div style="text-align: center; margin-bottom: 3rem;">
-                <h2>2025-2026 Recital Series</h2>
-            </div>
-        </div>
-        <div style="width: 100vw; margin: 2rem 0; border-radius: 12px; box-shadow: var(--shadow-elegant); background: url('/static/images/piano_recital_series_2025_2026.jpeg') center/contain no-repeat; aspect-ratio: 16/9; position: relative; left: 50%; transform: translateX(-50%);"></div>
-        <div class="container">
-            
-            
-            <div style="text-align: center; margin-top: 3rem;">
-                <a href="#" class="btn btn-primary-light">Purchase Tickets</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action -->
-    <section class="section">
-        <div class="container" style="text-align: center;">
-            <h2>Join the Steinway Society Community</h2>
-            <p style="max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">Support classical piano music and help us continue our mission of promoting excellence in performance and education.</p>
-            
-            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <a href="#" class="btn btn-primary-light">Become a Member</a>
-                <a href="#" class="btn btn-outline-light">Make a Donation</a>
-                <a href="#" class="btn btn-outline-light">Become a Young Artist</a>
-            </div>
-        </div>
-    </section>
-    <!-- Featured Content -->
-    <section class="section section-alt">
-        <div class="container">
-            <h2 style="text-align: center; margin-bottom: 3rem;">Latest News & Highlights</h2>
-            
-            <div class="grid grid-3">
-                <article class="card">
-                    <div class="card-meta">Featured Article</div>
-                    <h3 class="card-title">The Ballade of Piano and Chess</h3>
-                    <p>Explore the fascinating connection between chess and classical music in this insightful piece by Evan Park, featuring an interview with pianist and WCHOF Director Brian Woods.</p>
-                    <a href="#" class="btn btn-outline" style="margin-top: 1rem;">Read More</a>
-                </article>
-                
-                <article class="card">
-                    <div class="card-meta">Announcement</div>
-                    <h3 class="card-title">Board of Directors Recruitment</h3>
-                    <p>We're seeking passionate individuals with appreciation for classical piano, leadership skills, and nonprofit experience to join our board and help guide our mission forward.</p>
-                    <a href="#" class="btn btn-outline" style="margin-top: 1rem;">Learn More</a>
-                </article>
-                
-                <article class="card">
-                    <div class="card-meta">Competition Winner</div>
-                    <h3 class="card-title">Youth Piano Concerto Competition</h3>
-                    <p>Congratulations to Leona Chen, winner of our youth competition, who performed Mozart's Piano Concerto No. 20 on September 9, 2023.</p>
-                    <a href="#" class="btn btn-outline" style="margin-top: 1rem;">View Details</a>
-                </article>
-            </div>
-        </div>
-    </section>
-
+        </section>
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
@@ -189,46 +130,25 @@
             </div>
         </div>
     </footer>
-    </main>
 
     <script>
         // Dynamic header height calculation
         function updateMainContentMargin() {
-            console.log(`🔥 TRIGGER: updateMainContentMargin() called at ${new Date().toLocaleTimeString()}`);
-            
             const header = document.querySelector('.header');
             const mainContent = document.querySelector('.main-content');
             
             if (header && mainContent) {
                 const headerHeight = header.offsetHeight;
                 mainContent.style.marginTop = headerHeight + 'px';
-                
-                // Debug log (can be removed later)
-                console.log(`📐 Header height: ${headerHeight}px, Main content margin updated`);
             }
         }
         
-        // Update on initial load (works for both refresh and address input)
-        console.log('📝 Setting up load event listener');
-        window.addEventListener('load', function() {
-            console.log('🚀 LOAD EVENT triggered');
-            updateMainContentMargin();
-        });
+        window.addEventListener('load', updateMainContentMargin);
+        window.addEventListener('resize', updateMainContentMargin);
         
-        // Update on window resize (handles desktop resize and mobile orientation changes)
-        console.log('📝 Setting up resize event listener');
-        window.addEventListener('resize', function() {
-            console.log('🔄 RESIZE EVENT triggered');
-            updateMainContentMargin();
-        });
-        
-        // Update after header state changes (scrolled/unscrolled)
         function updateHeaderWithMargin() {
-            console.log('📜 SCROLL: updateHeaderWithMargin() called');
             updateHeader();
-            // Small delay to allow CSS transitions to complete before recalculating
             setTimeout(() => {
-                console.log('⏰ SCROLL DELAY: Running delayed updateMainContentMargin()');
                 updateMainContentMargin();
             }, 350);
         }
@@ -242,7 +162,6 @@
         // Close mobile menu when clicking on a link
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
-                // For mobile: toggle dropdown for parent items
                 if (window.innerWidth <= 768) {
                     const parentItem = this.closest('.nav-item');
                     const dropdown = parentItem.querySelector('.dropdown');
@@ -251,7 +170,6 @@
                         e.preventDefault();
                         parentItem.classList.toggle('active');
                         
-                        // Close other open dropdowns
                         document.querySelectorAll('.nav-item.active').forEach(item => {
                             if (item !== parentItem) {
                                 item.classList.remove('active');
@@ -261,34 +179,25 @@
                     }
                 }
                 
-                // Close mobile menu when clicking on a regular link
                 const navMenu = document.querySelector('.nav-menu');
                 navMenu.classList.remove('active');
             });
         });
 
-        // Header scroll behavior - Steinway style
+        // Header scroll behavior
         let lastScrollTop = 0;
-        let currentState = 'large'; // 'large' or 'small'
+        let currentState = 'large';
         const header = document.querySelector('.header');
-        const logoSection = document.querySelector('.logo-section');
-        
-        // Throttle scroll events for better performance
         let ticking = false;
-        let scrollDirection = 'down';
         
         function updateHeader() {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            // Simple threshold-based approach since header is now fixed
             const THRESHOLD = 100;
             
             if (scrollTop > THRESHOLD && currentState === 'large') {
-                // Scrolled past threshold - show compact header
                 header.classList.add('scrolled');
                 currentState = 'small';
             } else if (scrollTop <= THRESHOLD && currentState === 'small') {
-                // Scrolled back to top - show large header
                 header.classList.remove('scrolled');
                 currentState = 'large';
             }
@@ -304,19 +213,6 @@
                     ticking = false;
                 });
             }
-        });
-
-        // Smooth scrolling for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
-                    });
-                }
-            });
         });
     </script>
 </body>

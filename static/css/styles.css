@@ -690,3 +690,530 @@ a:hover {
 .fade-in-up {
   animation: fadeInUp 0.6s ease-out;
 }
+
+/* Page Layout Styles */
+.page-header {
+  padding: 6rem 0 4rem;
+  background-color: var(--background-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.page-header h1 {
+  font-size: 3rem;
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.content-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+.content-wrapper p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+
+.content-wrapper h2 {
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+.content-wrapper a {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+.content-wrapper a:hover {
+  color: var(--primary-color);
+}
+
+/* Active navigation link styling */
+.nav-link.active {
+  color: var(--accent-color) !important;
+  font-weight: 500;
+}
+
+/* Page links styling */
+.page-links {
+  margin-top: 3rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Board member list styling */
+.board-list {
+  margin-bottom: 3rem;
+}
+
+.board-member {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.board-member:last-child {
+  border-bottom: none;
+}
+
+.board-member strong {
+  color: var(--primary-color);
+}
+
+/* TODO section styling */
+.todo-section {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.todo-section p {
+  margin-bottom: 0.5rem;
+  color: #856404;
+}
+
+.todo-section p:last-child {
+  margin-bottom: 0;
+}
+
+/* Performance schedule styling */
+.performance-schedule {
+  margin-top: 2rem;
+}
+
+.performance-date {
+  background-color: var(--background-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-subtle);
+}
+
+.performance-date:last-child {
+  margin-bottom: 0;
+}
+
+.date-header {
+  font-weight: 600;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.performers {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Audition info card styling */
+.audition-info-card, .contact-info-card {
+  background-color: var(--background-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-subtle);
+}
+
+.audition-info-card:last-child, .contact-info-card:last-child {
+  margin-bottom: 0;
+}
+
+.audition-info-card h3, .contact-info-card h3 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.audition-info-card ul, .contact-info-card ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.audition-info-card li, .contact-info-card li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.contact-info-card {
+  background-color: var(--background-light);
+  border-color: var(--accent-light);
+}
+
+/* Honors recital styling */
+.recital-dates {
+  margin: 2rem 0;
+  background-color: var(--background-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: var(--shadow-subtle);
+}
+
+.recital-date {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--accent-color);
+  font-size: 1.1rem;
+}
+
+.recital-date:last-child {
+  border-bottom: none;
+}
+
+.recital-info-card {
+  background-color: var(--accent-light);
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.recital-info-card p {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.recital-info-card p:last-child {
+  margin-bottom: 0;
+}
+
+.guidelines-card {
+  background-color: var(--background-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: var(--shadow-subtle);
+}
+
+.guidelines-card ul {
+  margin-left: 1.5rem;
+}
+
+.guidelines-card li {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.guidelines-card ul ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Membership page styling */
+.membership-application-card {
+  background-color: var(--accent-light);
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.membership-application-card h3 {
+  color: var(--accent-color);
+  margin-bottom: 1rem;
+}
+
+.form-filename {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+.membership-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.membership-level {
+  background-color: var(--background-white);
+  border: 2px solid var(--accent-color);
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  box-shadow: var(--shadow-medium);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.membership-level:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-elegant);
+}
+
+.membership-price {
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  font-family: 'Playfair Display', serif;
+  margin-bottom: 0.5rem;
+}
+
+.membership-type {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.membership-description {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.donation-info-card {
+  background-color: var(--background-light);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 3rem 0 0 0;
+  border-left: 4px solid var(--accent-color);
+}
+
+.donation-info-card p {
+  margin-bottom: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Support page styling */
+.donation-address-card {
+  background-color: var(--accent-color);
+  color: var(--ivory);
+  border-radius: 12px;
+  padding: 3rem;
+  margin: 2rem 0;
+  text-align: center;
+  box-shadow: var(--shadow-elegant);
+}
+
+.donation-address-card h3 {
+  color: var(--ivory);
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+.address {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.recognition-card {
+  background-color: var(--background-white);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: var(--shadow-subtle);
+  border-left: 4px solid var(--accent-gold);
+}
+
+.recognition-card h3 {
+  color: var(--accent-gold);
+  margin-bottom: 1rem;
+}
+
+.recognition-card p {
+  margin-bottom: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Contact page styling */
+.contact-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-bottom: 4rem;
+}
+
+.contact-info h2, .contact-form-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--accent-color);
+}
+
+.contact-details {
+  margin-top: 2rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--background-white);
+  border-radius: 8px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.contact-icon {
+  background-color: var(--accent-color);
+  color: var(--ivory);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  flex-shrink: 0;
+}
+
+.contact-text {
+  flex: 1;
+}
+
+.contact-text strong {
+  color: var(--primary-color);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.contact-text a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.contact-text a:hover {
+  color: var(--primary-color);
+}
+
+/* Contact form styling */
+.contact-form {
+  background-color: var(--background-white);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-row.three-col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.1);
+}
+
+.privacy-note {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--background-light);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.privacy-note p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+/* Related organizations */
+.related-organizations {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.related-organizations h2 {
+  color: var(--accent-color);
+  margin-bottom: 2rem;
+}
+
+.org-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive design for contact page */
+@media (max-width: 768px) {
+  .contact-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .contact-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .contact-icon {
+    margin: 0 0 1rem 0;
+    align-self: center;
+  }
+  
+  .org-links {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: 4rem 0 2rem;
+  }
+  
+  .page-header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .content-wrapper p {
+    font-size: 1rem;
+  }
+}
