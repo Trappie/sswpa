@@ -27,19 +27,64 @@
                 <div class="content-wrapper">
                     <p>Join us for our exciting 2025-26 Artist Recital Series! All recitals include a "Meet the Artist" reception after the performance.</p>
 
-                    <div class="todo-section">
-                        <p><strong>TODO:</strong> <strong>[include photo, name, date, 3pm, and Kresge Theatre, College of Fine Arts, Carnegie Mellon University]</strong></p>
-                        <p><strong>TODO:</strong> <strong>[each info card should have a link to purchase tickets]</strong></p>
+                    <div class="concerts-grid">
+                        <div class="concert-card">
+                            <div class="concert-header">
+                                <div class="concert-date">
+                                    <div class="month">MAR</div>
+                                    <div class="day">23</div>
+                                    <div class="year">2025</div>
+                                </div>
+                                <div class="concert-info">
+                                    <h3 class="artist-name">John Novacek</h3>
+                                    <p class="concert-details">Pianist</p>
+                                    <div class="concert-meta">
+                                        <div class="time"><i class="fas fa-clock"></i> 3:00 PM</div>
+                                        <div class="venue"><i class="fas fa-map-marker-alt"></i> Kresge Recital Hall, Carnegie Mellon University</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="concert-footer">
+                                <div class="pricing">
+                                    <span class="price-range">$10 - $25</span>
+                                    <span class="free-note">Free for SSWPA Members & CMU Students</span>
+                                </div>
+                                <a href="/tickets/john-novacek-2025" class="btn btn-primary-light">Purchase Tickets</a>
+                            </div>
+                        </div>
+
+                        <!-- Additional concerts can be added here -->
+                        <div class="concert-card upcoming">
+                            <div class="concert-header">
+                                <div class="concert-date">
+                                    <div class="month">APR</div>
+                                    <div class="day">TBD</div>
+                                    <div class="year">2025</div>
+                                </div>
+                                <div class="concert-info">
+                                    <h3 class="artist-name">Next Artist TBA</h3>
+                                    <p class="concert-details">Piano Recital</p>
+                                    <div class="concert-meta">
+                                        <div class="time"><i class="fas fa-clock"></i> 3:00 PM</div>
+                                        <div class="venue"><i class="fas fa-map-marker-alt"></i> Kresge Recital Hall, Carnegie Mellon University</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="concert-footer">
+                                <div class="pricing">
+                                    <span class="price-range">Coming Soon</span>
+                                </div>
+                                <button class="btn btn-outline-light" disabled>Tickets Available Soon</button>
+                            </div>
+                        </div>
                     </div>
 
                     <p>No ticket purchase is required for Steinway Society members and CMU students (with ID).</p>
 
                     <h2>Become a Member</h2>
                     <p>Members are eligible for free tickets to our entire Recital Series (4 recitals). We have two forms of membership:</p>
-                    <ul>
-                        <li><strong>Individual Members ($75 per season)</strong> receive one admission to all Artist Recitals of the series.</li>
-                        <li><strong>Family Memberships ($125 per season)</strong> include four tickets to each of the Artist Recitals of the series.</li>
-                    </ul>
+                    
+                    {% include 'membership-cards.html' %}
 
                     <h2>Parking Information</h2>
                     <p>Parking is free on Sundays on the following streets at Carnegie Mellon University: Frew Street, Tech Street, and Margaret Morrison Street.</p>

@@ -63,6 +63,17 @@ async def support(request: Request):
 async def contact(request: Request):
     return templates.TemplateResponse("contact.html", {"request": request, "current_page": "contact"})
 
+@app.get("/tickets/{concert_slug}", response_class=HTMLResponse)
+async def ticket_detail(request: Request, concert_slug: str):
+    # For now, return the same template for all concerts
+    # In the future, this would fetch concert data from a database
+    return templates.TemplateResponse("ticket-detail.html", {
+        "request": request, 
+        "current_page": "tickets",
+        "concert_slug": concert_slug,
+        "artist_name": "John Novacek"  # This would come from database
+    })
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
