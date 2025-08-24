@@ -1,0 +1,55 @@
+<!-- Header & Navigation -->
+<header class="header">
+    <div class="logo-section">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="/static/images/steinway_society_logo_centered.svg" alt="Steinway Society Logo" class="logo-img">
+            </a>
+        </div>
+    </div>
+    <nav class="nav-container">
+        <!-- Color-inverted logo for scrolled state -->
+        <img src="/static/images/steinway_logo_centered.svg" alt="Steinway Society Logo" class="nav-logo">
+        
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="/" class="nav-link {{ 'active' if current_page == 'home' else '' }}">Home</a>
+            </li>
+            <li class="nav-item">
+                <a href="/about" class="nav-link {{ 'active' if current_page == 'about' else '' }}">About the Steinway Society</a>
+                <ul class="dropdown">
+                    <li><a href="/mission" class="dropdown-link {{ 'active' if current_page == 'mission' else '' }}">Mission Statement</a></li>
+                    <li><a href="/programs" class="dropdown-link {{ 'active' if current_page == 'programs' else '' }}">Programs</a></li>
+                    <li><a href="/board" class="dropdown-link {{ 'active' if current_page == 'board' else '' }}">Board of Directors</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="/tickets" class="nav-link {{ 'active' if current_page == 'tickets' else '' }}">Purchase Tickets</a>
+            </li>
+            <li class="nav-item">
+                <a href="/young-artists/about" class="nav-link {{ 'active' if current_page.startswith('young-artists') else '' }}">Young Artists</a>
+                <ul class="dropdown">
+                    <li><a href="/young-artists/about" class="dropdown-link {{ 'active' if current_page == 'young-artists-about' else '' }}">About the Program</a></li>
+                    <li><a href="/young-artists/audition" class="dropdown-link {{ 'active' if current_page == 'young-artists-audition' else '' }}">How to Audition</a></li>
+                    <li><a href="/young-artists/heinz-hall" class="dropdown-link {{ 'active' if current_page == 'young-artists-heinz-hall' else '' }}">Heinz Hall Performances</a></li>
+                    <li><a href="/young-artists/honors" class="dropdown-link {{ 'active' if current_page == 'young-artists-honors' else '' }}">Honors Recitals</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="/membership" class="nav-link {{ 'active' if current_page == 'membership' else '' }}">Membership</a>
+            </li>
+            <li class="nav-item">
+                <a href="/support" class="nav-link {{ 'active' if current_page == 'support' else '' }}">Support the Society</a>
+            </li>
+            <li class="nav-item">
+                <a href="/contact" class="nav-link {{ 'active' if current_page == 'contact' else '' }}">Contact</a>
+            </li>
+        </ul>
+        
+        <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+</header>

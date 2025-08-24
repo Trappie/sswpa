@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ artist_name }} - Purchase Tickets | Steinway Society of Western Pennsylvania</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'nav.html' %}
+
+    <main class="main-content">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <h1>Purchase Tickets</h1>
+            </div>
+        </section>
+
+        <!-- Ticket Details -->
+        <section class="section">
+            <div class="container">
+                <div class="ticket-detail-layout">
+                    <!-- Event Information -->
+                    <div class="event-details-card">
+                        <div class="event-header">
+                            <div class="event-date-large">
+                                <div class="month">MAR</div>
+                                <div class="day">23</div>
+                                <div class="year">2025</div>
+                            </div>
+                            <div class="event-title-info">
+                                <h2>John Novacek</h2>
+                                <p class="event-type">Piano Recital</p>
+                                <div class="event-metadata">
+                                    <div class="meta-item">
+                                        <i class="fas fa-clock"></i>
+                                        <span>Sunday, 3:00 PM</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>Kresge Recital Hall<br>College of Fine Arts, Carnegie Mellon University</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="event-description">
+                            <h3>About This Concert</h3>
+                            <p>Join us for an enchanting evening with renowned pianist John Novacek. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            <p>All recitals include a "Meet the Artist" reception after the performance, providing an opportunity to personally connect with the artist.</p>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Purchase -->
+                    <div class="ticket-purchase-card">
+                        <h3>Select Tickets</h3>
+                        
+                        <div class="ticket-options">
+                            <div class="ticket-option">
+                                <div class="ticket-info">
+                                    <h4>Adult Admission</h4>
+                                    <p>General admission for adults</p>
+                                </div>
+                                <div class="ticket-controls">
+                                    <span class="price">$25.00</span>
+                                    <div class="quantity-selector">
+                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', -1)">-</button>
+                                        <input type="number" id="adult-qty" value="0" min="0" readonly>
+                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ticket-option">
+                                <div class="ticket-info">
+                                    <h4>Student Admission</h4>
+                                    <p>Discounted admission for students</p>
+                                </div>
+                                <div class="ticket-controls">
+                                    <span class="price">$10.00</span>
+                                    <div class="quantity-selector">
+                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', -1)">-</button>
+                                        <input type="number" id="student-qty" value="0" min="0" readonly>
+                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ticket-summary">
+                            <div class="summary-line">
+                                <span>Total Tickets:</span>
+                                <span id="total-tickets">0</span>
+                            </div>
+                            <div class="summary-line total">
+                                <span>Total Amount:</span>
+                                <span id="total-amount">$0.00</span>
+                            </div>
+                        </div>
+
+                        <button id="add-to-cart" class="btn btn-primary" disabled onclick="addToCart()">
+                            Add to Cart
+                        </button>
+
+                        <div class="important-notes">
+                            <h4>Important Information</h4>
+                            <ul>
+                                <li><strong>No Physical Tickets Required</strong> - Your purchase adds you to our pre-paid ticket list</li>
+                                <li><strong>Free for SSWPA Members</strong> - Members and CMU students with ID get free admission</li>
+                                <li><strong>Box Office Check-in</strong> - Simply provide your name at the door for confirmation</li>
+                                <li><strong>Meet the Artist</strong> - Reception included after every performance</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        // Ticket quantity and pricing logic
+        const prices = {
+            adult: 25.00,
+            student: 10.00
+        };
+
+        function updateQuantity(type, change) {
+            const input = document.getElementById(type + '-qty');
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = Math.max(0, currentValue + change);
+            input.value = newValue;
+            updateTotal();
+        }
+
+        function updateTotal() {
+            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
+            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+            
+            const totalTickets = adultQty + studentQty;
+            const totalAmount = (adultQty * prices.adult) + (studentQty * prices.student);
+            
+            document.getElementById('total-tickets').textContent = totalTickets;
+            document.getElementById('total-amount').textContent = '$' + totalAmount.toFixed(2);
+            
+            const addToCartBtn = document.getElementById('add-to-cart');
+            addToCartBtn.disabled = totalTickets === 0;
+        }
+
+        function addToCart() {
+            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
+            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+            
+            if (adultQty + studentQty > 0) {
+                // This would normally integrate with a payment system
+                alert('Tickets added to cart! (Payment integration would happen here)');
+            }
+        }
+
+        // Initialize
+        updateTotal();
+    </script>
+</body>
+</html>

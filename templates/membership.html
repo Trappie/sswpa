@@ -11,61 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Header & Navigation -->
-    <header class="header">
-        <div class="logo-section">
-            <div class="container">
-                <a href="/" class="logo">
-                    <img src="/static/images/steinway_society_logo_centered.svg" alt="Steinway Society Logo" class="logo-img">
-                </a>
-            </div>
-        </div>
-        <nav class="nav-container">
-            <!-- Color-inverted logo for scrolled state -->
-            <img src="/static/images/steinway_logo_centered.svg" alt="Steinway Society Logo" class="nav-logo">
-            
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="/" class="nav-link">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/about" class="nav-link">About the Steinway Society</a>
-                    <ul class="dropdown">
-                        <li><a href="/mission" class="dropdown-link">Mission Statement</a></li>
-                        <li><a href="/programs" class="dropdown-link">Programs</a></li>
-                        <li><a href="/board" class="dropdown-link">Board of Directors</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a href="/tickets" class="nav-link">Purchase Tickets</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/young-artists" class="nav-link">Young Artists</a>
-                    <ul class="dropdown">
-                        <li><a href="/young-artists/about" class="dropdown-link">About the Program</a></li>
-                        <li><a href="/young-artists/audition" class="dropdown-link">How to Audition</a></li>
-                        <li><a href="/young-artists/heinz-hall" class="dropdown-link">Heinz Hall Performances</a></li>
-                        <li><a href="/young-artists/honors" class="dropdown-link">Honors Recitals</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <a href="/membership" class="nav-link active">Membership</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/support" class="nav-link">Support the Society</a>
-                </li>
-                <li class="nav-item">
-                    <a href="/contact" class="nav-link">Contact</a>
-                </li>
-            </ul>
-            
-            <button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </nav>
-    </header>
+    {% include 'nav.html' %}
 
     <main class="main-content">
         <!-- Page Header -->
@@ -92,19 +38,7 @@
 
                     <h2>Membership Levels</h2>
                     
-                    <div class="membership-levels">
-                        <div class="membership-level">
-                            <div class="membership-price">$75</div>
-                            <div class="membership-type">Individual</div>
-                            <div class="membership-description">Individual Members receive one admission to all Artist Recitals of the series.</div>
-                        </div>
-
-                        <div class="membership-level">
-                            <div class="membership-price">$125</div>
-                            <div class="membership-type">Family</div>
-                            <div class="membership-description">Family Memberships include four tickets to each of the Artist Recitals of the series.</div>
-                        </div>
-                    </div>
+                    {% include 'membership-cards.html' %}
 
                     <div class="donation-info-card">
                         <p>Donations above and beyond the membership fee are welcomed and encouraged. Any donations beyond the membership fee are fully tax deductible under section 501(c)(3) of the IRS guidelines for non-profit organizations.</p>
@@ -114,135 +48,8 @@
         </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>Contact</h4>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <a href="mailto:info@sswpa.org" class="social-link" aria-label="Email"><i class="fas fa-envelope"></i></a>
-                        <a href="mailto:info@sswpa.org">info@sswpa.org</a>
-                    </div>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Recital Series</h4>
-                    <ul style="list-style: none; padding-left: 0; margin-left: 0;">
-                        <li><a href="#">Concert Series</a></li>
-                        <li><a href="#">Young Artist Program</a></li>
-                        <li><a href="#">Honors Recitals</a></li>
-                        <li><a href="#">Heinz Hall Performances</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Community Partners</h4>
-                    <ul style="list-style: none; padding-left: 0; margin-left: 0;">
-                        <li><a href="https://www.wqed.org">WQED</a></li>
-                        <li><a href="https://pittsburghconcertsociety.org/">Pittsburgh Concert Society</a></li>
-                        <li><a href="https://pittsburghsymphony.org/">Pittsburgh Symphony Orchestra</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-section">
-                    <h4>Follow Us</h4>
-                    <div class="social-links">
-                        <a href="https://www.facebook.com/Steinway-Society-of-Western-Pennsylvania-127194341970/" class="social-link" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="https://www.instagram.com/steinway_wpa/" class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; 2025 Steinway Society of Western Pennsylvania. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    {% include 'footer.html' %}
 
-    <script>
-        // Dynamic header height calculation
-        function updateMainContentMargin() {
-            const header = document.querySelector('.header');
-            const mainContent = document.querySelector('.main-content');
-            
-            if (header && mainContent) {
-                const headerHeight = header.offsetHeight;
-                mainContent.style.marginTop = headerHeight + 'px';
-            }
-        }
-        
-        window.addEventListener('load', updateMainContentMargin);
-        window.addEventListener('resize', updateMainContentMargin);
-        
-        function updateHeaderWithMargin() {
-            updateHeader();
-            setTimeout(() => {
-                updateMainContentMargin();
-            }, 350);
-        }
-
-        // Mobile menu toggle
-        document.querySelector('.mobile-menu-toggle').addEventListener('click', function() {
-            const navMenu = document.querySelector('.nav-menu');
-            navMenu.classList.toggle('active');
-        });
-
-        // Close mobile menu when clicking on a link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                if (window.innerWidth <= 768) {
-                    const parentItem = this.closest('.nav-item');
-                    const dropdown = parentItem.querySelector('.dropdown');
-                    
-                    if (dropdown) {
-                        e.preventDefault();
-                        parentItem.classList.toggle('active');
-                        
-                        document.querySelectorAll('.nav-item.active').forEach(item => {
-                            if (item !== parentItem) {
-                                item.classList.remove('active');
-                            }
-                        });
-                        return;
-                    }
-                }
-                
-                const navMenu = document.querySelector('.nav-menu');
-                navMenu.classList.remove('active');
-            });
-        });
-
-        // Header scroll behavior
-        let lastScrollTop = 0;
-        let currentState = 'large';
-        const header = document.querySelector('.header');
-        let ticking = false;
-        
-        function updateHeader() {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const THRESHOLD = 100;
-            
-            if (scrollTop > THRESHOLD && currentState === 'large') {
-                header.classList.add('scrolled');
-                currentState = 'small';
-            } else if (scrollTop <= THRESHOLD && currentState === 'small') {
-                header.classList.remove('scrolled');
-                currentState = 'large';
-            }
-            
-            lastScrollTop = scrollTop;
-        }
-        
-        window.addEventListener('scroll', function() {
-            if (!ticking) {
-                ticking = true;
-                requestAnimationFrame(function() {
-                    updateHeaderWithMargin();
-                    ticking = false;
-                });
-            }
-        });
-    </script>
+    <script src="/static/js/main.js"></script>
 </body>
 </html>
