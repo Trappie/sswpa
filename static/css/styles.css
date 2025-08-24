@@ -277,6 +277,8 @@ a:hover {
   visibility: hidden;
   transform: translateY(-10px);
   transition: all 0.3s ease;
+  list-style: none;
+  margin: 0;
 }
 
 .nav-item:hover .dropdown {
