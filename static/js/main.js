@@ -1,23 +1,21 @@
-// Dynamic header height calculation
-function updateMainContentMargin() {
+// Set fixed header margin once (based on full header size)
+function setFixedHeaderMargin() {
     const header = document.querySelector('.header');
     const mainContent = document.querySelector('.main-content');
     
     if (header && mainContent) {
-        const headerHeight = header.offsetHeight;
-        mainContent.style.marginTop = headerHeight + 'px';
+        // Ensure header is in full size to measure correctly
+        header.classList.remove('scrolled');
+        const fullHeaderHeight = header.offsetHeight;
+        mainContent.style.marginTop = fullHeaderHeight + 'px';
+        
+        console.log(`Fixed margin set to: ${fullHeaderHeight}px`);
     }
 }
 
-window.addEventListener('load', updateMainContentMargin);
-window.addEventListener('resize', updateMainContentMargin);
-
-function updateHeaderWithMargin() {
-    updateHeader();
-    setTimeout(() => {
-        updateMainContentMargin();
-    }, 350);
-}
+// Set margin once on load and resize, but never change it during scroll
+window.addEventListener('load', setFixedHeaderMargin);
+window.addEventListener('resize', setFixedHeaderMargin);
 
 // Mobile menu toggle
 document.querySelector('.mobile-menu-toggle').addEventListener('click', function() {
@@ -75,7 +73,7 @@ window.addEventListener('scroll', function() {
     if (!ticking) {
         ticking = true;
         requestAnimationFrame(function() {
-            updateHeaderWithMargin();
+            updateHeader(); // Only update header, no margin changes
             ticking = false;
         });
     }
