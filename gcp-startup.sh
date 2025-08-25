@@ -26,17 +26,19 @@ echo "Stopping existing container..."
 docker stop $CONTAINER_NAME 2>/dev/null || true
 docker rm $CONTAINER_NAME 2>/dev/null || true
 
-# Run the new container
+# Create network and run the new container
+echo "Creating Docker network..."
+docker network create sswpa-net 2>/dev/null || true
+
 echo "Starting new container..."
 docker run -d \
   --name $CONTAINER_NAME \
   --restart unless-stopped \
-  -p 80:$PORT \
-  -p 443:$PORT \
+  --network sswpa-net \
   $IMAGE_NAME
 
 # Show container status
 echo "Container status:"
 docker ps | grep $CONTAINER_NAME
 
-echo "Application should be running on port 80"
+echo "Application should be running behind Caddy proxy"
