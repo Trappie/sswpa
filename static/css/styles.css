@@ -1196,6 +1196,16 @@ a:hover {
   transition: all 0.3s ease;
 }
 
+.concert-image {
+  width: 100%;
+}
+
+.artist-photo {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .concert-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-elegant);
