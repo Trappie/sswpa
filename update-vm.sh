@@ -29,10 +29,11 @@ sudo docker stop ${CONTAINER_NAME} 2>/dev/null || true &&
 echo '🗑️  Removing old container...' &&
 sudo docker rm ${CONTAINER_NAME} 2>/dev/null || true &&
 echo '🚀 Starting new container...' &&
-sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped -p 80:8000 ${FULL_IMAGE_NAME} &&
+sudo docker network create sswpa-net 2>/dev/null || true &&
+sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped --network sswpa-net ${FULL_IMAGE_NAME} &&
 echo '✅ Container updated successfully!' &&
 echo '📊 Container status:' &&
 sudo docker ps | grep ${CONTAINER_NAME}
 "
 
-echo "🎉 Update complete! Application should be running at http://34.70.2.1"
+echo "🎉 Update complete! Application should be running behind Caddy proxy"

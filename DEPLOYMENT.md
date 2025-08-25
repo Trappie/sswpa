@@ -8,6 +8,8 @@ This guide covers the complete deployment process for the SSWPA FastAPI applicat
 - **Deployment**: Containerized with Docker on GCP Container-Optimized OS
 - **Registry**: Google Artifact Registry
 - **Infrastructure**: Single GCP VM with static IP
+- **HTTPS**: Caddy reverse proxy with automatic SSL certificates
+- **Domains**: sswpa.org and www.sswpa.org
 
 ## Project Structure
 
@@ -31,6 +33,7 @@ sswpa/
 ├── build-and-push.sh        # Build and push script
 ├── update-vm.sh             # Update deployment script
 ├── gcp-startup.sh           # VM startup script
+├── setup-caddy.sh           # Caddy HTTPS setup script (one-time)
 └── docker-compose.yml       # Local development
 ```
 
@@ -170,13 +173,14 @@ sudo docker stop ${CONTAINER_NAME} 2>/dev/null || true &&
 echo '🗑️  Removing old container...' &&
 sudo docker rm ${CONTAINER_NAME} 2>/dev/null || true &&
 echo '🚀 Starting new container...' &&
-sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped -p 80:8000 ${FULL_IMAGE_NAME} &&
+sudo docker network create sswpa-net 2>/dev/null || true &&
+sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped --network sswpa-net ${FULL_IMAGE_NAME} &&
 echo '✅ Container updated successfully!' &&
 echo '📊 Container status:' &&
 sudo docker ps | grep ${CONTAINER_NAME}
 "
 
-echo "🎉 Update complete! Application should be running at http://34.70.2.1"
+echo "🎉 Update complete! Application should be running at https://sswpa.org"
 ```
 
 ### 3. VM Startup Script (`gcp-startup.sh`)
@@ -209,36 +213,41 @@ echo "Stopping existing container..."
 docker stop $CONTAINER_NAME 2>/dev/null || true
 docker rm $CONTAINER_NAME 2>/dev/null || true
 
-# Run the new container
+# Create network and run the new container
+echo "Creating Docker network..."
+docker network create sswpa-net 2>/dev/null || true
+
 echo "Starting new container..."
 docker run -d \
   --name $CONTAINER_NAME \
   --restart unless-stopped \
-  -p 80:$PORT \
-  -p 443:$PORT \
+  --network sswpa-net \
   $IMAGE_NAME
 
 # Show container status
 echo "Container status:"
 docker ps | grep $CONTAINER_NAME
 
-echo "Application should be running on port 80"
+echo "Application should be running behind Caddy proxy"
 ```
 
 ## Development Workflow
 
-### 1. Initial Deployment
+### 1. Initial Deployment (One-Time Setup)
 ```bash
 # 1. Build and push Docker image
 ./build-and-push.sh
 
-# 2. Set startup script on VM (one-time setup)
+# 2. Set up Caddy with HTTPS (one-time only)
+./setup-caddy.sh
+
+# 3. Deploy your application
+./update-vm.sh
+
+# 4. Set startup script on VM (one-time setup)
 gcloud compute instances add-metadata ngo-backend \
   --zone=us-central1-c \
   --metadata-from-file startup-script=gcp-startup.sh
-
-# 3. Restart VM to deploy (one-time setup)
-gcloud compute instances reset ngo-backend --zone=us-central1-c
 ```
 
 ### 2. Code Updates (Regular Workflow)
@@ -252,7 +261,21 @@ gcloud compute instances reset ngo-backend --zone=us-central1-c
 ./update-vm.sh
 ```
 
-### 3. Local Development
+### 3. HTTPS Setup Script (`setup-caddy.sh`)
+This script sets up Caddy as a reverse proxy with automatic HTTPS certificates for both `sswpa.org` and `www.sswpa.org`. **Run this only once during initial setup.**
+
+```bash
+./setup-caddy.sh
+```
+
+**What it does:**
+- Creates Caddy container with SSL certificate management
+- Configures reverse proxy to your FastAPI app
+- Automatically obtains SSL certificates from Let's Encrypt
+- Handles both sswpa.org and www.sswpa.org domains
+- Sets up security headers (HSTS, XSS protection, etc.)
+
+### 4. Local Development
 ```bash
 # Run locally for testing
 docker-compose up
@@ -275,6 +298,9 @@ sudo docker ps
 # Check container logs
 sudo docker logs sswpa-web
 
+# Check Caddy proxy logs
+sudo docker logs caddy-proxy
+
 # Check container health
 sudo docker inspect sswpa-web
 ```
@@ -288,11 +314,17 @@ gcloud compute ssh ngo-backend --zone=us-central1-c \
 
 ### Test Application
 ```bash
-# Test health endpoint
-curl http://34.70.2.1/health
+# Test HTTPS (primary)
+curl -I https://sswpa.org
 
-# Test main page
-curl -I http://34.70.2.1
+# Test www subdomain
+curl -I https://www.sswpa.org
+
+# Test HTTP redirect
+curl -I http://sswpa.org
+
+# Test health endpoint
+curl https://sswpa.org/health
 ```
 
 ### Common Issues and Solutions
@@ -317,8 +349,16 @@ gcloud compute instances set-service-account ngo-backend \
 #### 3. Container Won't Start
 **Check**: 
 - Container logs: `sudo docker logs sswpa-web`
+- Caddy logs: `sudo docker logs caddy-proxy`
 - Image architecture: `sudo docker inspect image-name`
-- Port conflicts: `sudo netstat -tlnp | grep :80`
+- Docker network: `sudo docker network ls | grep sswpa-net`
+
+#### 4. SSL Certificate Issues
+**Check**:
+- DNS pointing to correct IP: `nslookup sswpa.org` should return `34.70.2.1`
+- Caddy logs for certificate errors: `sudo docker logs caddy-proxy`
+- Firewall rules allow port 443: Check GCP console
+- Both containers on same network: `sudo docker network inspect sswpa-net`
 
 ## Infrastructure Details
 
@@ -331,15 +371,28 @@ gcloud compute instances set-service-account ngo-backend \
 - **Firewall Tags**: http-server, https-server
 
 ### Network Configuration
-- **Port 80**: HTTP traffic (mapped to container port 8000)
-- **Port 443**: HTTPS traffic (mapped to container port 8000)
+- **Port 80**: HTTP traffic (handled by Caddy, redirects to HTTPS)
+- **Port 443**: HTTPS traffic (handled by Caddy with SSL termination)
+- **Internal**: Caddy proxies to sswpa-web:8000 via Docker network
 - **Firewall Rules**: Allow HTTP/HTTPS from anywhere (0.0.0.0/0)
 
 ### Container Configuration
+
+#### Application Container (sswpa-web)
 - **Registry**: us-central1-docker.pkg.dev/tech-bridge-initiative/tech-bridge-initiative-repo/sswpa:latest
 - **Container Name**: sswpa-web
+- **Network**: sswpa-net (Docker network)
 - **Restart Policy**: unless-stopped
-- **Port Mapping**: 80:8000, 443:8000
+- **Internal Port**: 8000
+
+#### Caddy Reverse Proxy (caddy-proxy)
+- **Image**: caddy:latest
+- **Container Name**: caddy-proxy
+- **Network**: sswpa-net (Docker network)
+- **Port Mapping**: 80:80, 443:443
+- **Restart Policy**: unless-stopped
+- **SSL Certificates**: Automatic from Let's Encrypt
+- **Domains**: sswpa.org, www.sswpa.org
 
 ## Cost Optimization
 
@@ -350,25 +403,29 @@ gcloud compute instances set-service-account ngo-backend \
 
 ## Security Considerations
 
-- VM uses service account with minimal required permissions
-- Container runs as non-root user
-- Static files served through FastAPI (no direct file system access)
-- HTTPS can be configured with load balancer or reverse proxy
+- **VM**: Uses service account with minimal required permissions
+- **Container**: Runs as non-root user
+- **Static Files**: Served through FastAPI (no direct file system access)
+- **HTTPS**: Automatic SSL certificates with 90-day auto-renewal
+- **Security Headers**: HSTS, XSS protection, content type validation
+- **Network Isolation**: Containers communicate via private Docker network
 
 ## Next Steps
 
-1. **Domain Setup**: Configure custom domain with Cloud DNS
-2. **SSL/HTTPS**: Set up SSL certificate with Let's Encrypt
-3. **Load Balancer**: Add Google Cloud Load Balancer for HTTPS termination
-4. **Monitoring**: Set up Cloud Monitoring and logging
-5. **Backup**: Implement automated backups of VM and data
-6. **CI/CD**: Integrate with GitHub Actions for automated deployments
+1. ✅ **Domain Setup**: Custom domain configured (sswpa.org, www.sswpa.org)
+2. ✅ **SSL/HTTPS**: Automatic SSL certificates with Caddy + Let's Encrypt
+3. **Monitoring**: Set up Cloud Monitoring and logging
+4. **Backup**: Implement automated backups of VM and data
+5. **CI/CD**: Integrate with GitHub Actions for automated deployments
+6. **Performance**: Add CDN for static assets
+7. **Scaling**: Consider Cloud Run for auto-scaling if needed
 
 ## Quick Reference
 
 ### Key URLs
-- **Application**: http://34.70.2.1
-- **Health Check**: http://34.70.2.1/health
+- **Primary Site**: https://sswpa.org
+- **Alternative**: https://www.sswpa.org
+- **Health Check**: https://sswpa.org/health
 
 ### Key Commands
 ```bash
@@ -378,12 +435,15 @@ gcloud compute instances set-service-account ngo-backend \
 # Check status
 gcloud compute ssh ngo-backend --zone=us-central1-c --command="sudo docker ps"
 
-# View logs
+# View app logs
 gcloud compute ssh ngo-backend --zone=us-central1-c --command="sudo docker logs sswpa-web"
+
+# View Caddy logs
+gcloud compute ssh ngo-backend --zone=us-central1-c --command="sudo docker logs caddy-proxy"
 ```
 
 ### File Permissions
 ```bash
 # Make scripts executable
-chmod +x build-and-push.sh update-vm.sh gcp-startup.sh
+chmod +x build-and-push.sh update-vm.sh gcp-startup.sh setup-caddy.sh
 ```
