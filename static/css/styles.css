@@ -298,6 +298,13 @@ a:hover {
   color: var(--primary-color);
 }
 
+/* Hide main dropdown links on desktop (they're redundant with main menu) */
+@media (min-width: 769px) {
+  .dropdown-main-link {
+    display: none;
+  }
+}
+
 /* Hero Section */
 .hero {
   background: 
@@ -561,7 +568,6 @@ a:hover {
     transition: all 0.3s ease;
   }
   
-  .nav-item:hover .dropdown,
   .nav-item.active .dropdown {
     opacity: 1;
     visibility: visible;
