@@ -74,6 +74,7 @@ async def ticket_detail(request: Request, concert_slug: str):
         "artist_name": "John Novacek"  # This would come from database
     })
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
