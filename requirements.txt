@@ -5,3 +5,5 @@ python-multipart==0.0.20
 requests==2.32.3
 google-cloud-secret-manager==2.22.0
 pydantic==2.9.2
+squareup==43.0.2.20250820
+python-dotenv==1.0.1
