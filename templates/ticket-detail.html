@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
 </head>
 <body>
     {% include 'nav.html' %}
@@ -103,8 +104,31 @@
                             </div>
                         </div>
 
-                        <button id="add-to-cart" class="btn btn-primary" disabled onclick="addToCart()">
-                            Add to Cart
+                        <div id="checkout-form" style="display: none;">
+                            <h4>Checkout</h4>
+                            
+                            <div class="form-group">
+                                <label for="buyer-email">Email Address *</label>
+                                <input type="email" id="buyer-email" required>
+                            </div>
+                            
+                            <div class="payment-form">
+                                <div id="card-container">
+                                    <!-- Square payment form will be inserted here -->
+                                </div>
+                                <button id="pay-button" class="btn btn-primary-light" onclick="processPayment()">
+                                    Complete Purchase
+                                </button>
+                                <button id="cancel-button" class="btn btn-outline-light" onclick="cancelCheckout()">
+                                    Cancel
+                                </button>
+                            </div>
+                            
+                            <div id="payment-status" style="display: none;"></div>
+                        </div>
+
+                        <button id="add-to-cart" class="btn btn-primary-light" disabled onclick="showCheckout()">
+                            Purchase Tickets
                         </button>
 
                         <div class="important-notes">
@@ -131,6 +155,9 @@
             adult: 25.00,
             student: 10.00
         };
+        
+        let card;
+        let currentTotal = 0;
 
         function updateQuantity(type, change) {
             const input = document.getElementById(type + '-qty');
@@ -150,17 +177,96 @@
             document.getElementById('total-tickets').textContent = totalTickets;
             document.getElementById('total-amount').textContent = '$' + totalAmount.toFixed(2);
             
+            currentTotal = totalAmount;
+            
             const addToCartBtn = document.getElementById('add-to-cart');
             addToCartBtn.disabled = totalTickets === 0;
         }
 
-        function addToCart() {
-            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
-            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+        async function initializeSquare() {
+            try {
+                const appId = {{ square_app_id|tojson }};
+                const locationId = {{ square_location_id|tojson }};
+                const payments = Square.payments(appId, locationId);
+                
+                card = await payments.card();
+                await card.attach('#card-container');
+            } catch (error) {
+                console.error('Square initialization failed:', error);
+                document.getElementById('payment-status').innerHTML = '<div class="alert alert-error">Payment system unavailable. Please check your Square configuration.</div>';
+                document.getElementById('payment-status').style.display = 'block';
+                
+                // Don't let Square errors break the checkout form
+                card = null;
+            }
+        }
+
+        function showCheckout() {
+            if (currentTotal <= 0) return;
             
-            if (adultQty + studentQty > 0) {
-                // This would normally integrate with a payment system
-                alert('Tickets added to cart! (Payment integration would happen here)');
+            document.getElementById('add-to-cart').style.display = 'none';
+            document.getElementById('checkout-form').style.display = 'block';
+            
+            if (!card) {
+                initializeSquare();
+            }
+        }
+
+        function cancelCheckout() {
+            document.getElementById('checkout-form').style.display = 'none';
+            document.getElementById('add-to-cart').style.display = 'block';
+            document.getElementById('payment-status').style.display = 'none';
+        }
+
+        async function processPayment() {
+            const emailInput = document.getElementById('buyer-email');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                alert('Please enter your email address.');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('payment-status');
+            statusDiv.innerHTML = '<div class="alert alert-info">Processing payment...</div>';
+            statusDiv.style.display = 'block';
+            
+            try {
+                if (!card) {
+                    statusDiv.innerHTML = '<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>';
+                    return;
+                }
+                
+                const result = await card.tokenize();
+                
+                if (result.status === 'OK') {
+                    const response = await fetch('/process-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            source_id: result.token,
+                            amount: Math.round(currentTotal * 100), // Convert to cents
+                            currency: 'USD',
+                            buyer_email: email
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        statusDiv.innerHTML = '<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>';
+                        document.getElementById('pay-button').style.display = 'none';
+                    } else {
+                        statusDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>';
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                statusDiv.innerHTML = '<div class="alert alert-error">Payment failed. Please try again.</div>';
             }
         }
 

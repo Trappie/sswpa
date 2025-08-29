@@ -7,6 +7,15 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from google.cloud import secretmanager
 import logging
+import uuid
+import os
+from square import Square
+from square.environment import SquareEnvironment
+from pydantic import BaseModel
+from dotenv import load_dotenv
+
+# Load environment variables from .env file for local development
+load_dotenv()
 
 app = FastAPI(title="Steinway Society of Western Pennsylvania")
 
@@ -68,17 +77,51 @@ async def support(request: Request):
 async def contact(request: Request):
     return templates.TemplateResponse("contact.html", {"request": request, "current_page": "contact"})
 
-def get_gmail_password():
-    """Fetch Gmail app password from Secret Manager"""
+class PaymentRequest(BaseModel):
+    source_id: str
+    amount: int
+    currency: str = "USD"
+    buyer_email: str
+
+def get_secret(secret_id: str):
+    """Fetch secret from environment variable or Secret Manager"""
+    # Check if running locally with environment variables
+    if os.getenv('ENVIRONMENT') == 'local':
+        env_map = {
+            'square-sandbox-app-id': 'SQUARE_SANDBOX_APP_ID',
+            'square-sandbox-location-id': 'SQUARE_SANDBOX_LOCATION_ID', 
+            'square-sandbox-access-token': 'SQUARE_SANDBOX_ACCESS_TOKEN',
+            'gmail-app-password': 'GMAIL_APP_PASSWORD'
+        }
+        env_var = env_map.get(secret_id)
+        if env_var and os.getenv(env_var):
+            return os.getenv(env_var)
+    
+    # Fallback to GCP Secret Manager
     try:
         client = secretmanager.SecretManagerServiceClient()
         project_id = "tech-bridge-initiative"
-        secret_id = "gmail-app-password"
         name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
     except Exception as e:
-        logging.error(f"Failed to retrieve Gmail password: {e}")
+        logging.error(f"Failed to retrieve secret {secret_id}: {e}")
+        raise
+
+def get_gmail_password():
+    """Fetch Gmail app password from Secret Manager"""
+    return get_secret("gmail-app-password")
+
+def get_square_client():
+    """Get Square client with sandbox credentials"""
+    try:
+        access_token = get_secret("square-sandbox-access-token")
+        return Square(
+            environment=SquareEnvironment.SANDBOX,
+            token=access_token
+        )
+    except Exception as e:
+        logging.error(f"Failed to create Square client: {e}")
         raise
 
 def send_contact_email(form_data: dict):
@@ -183,13 +226,66 @@ async def submit_contact_form(
 async def ticket_detail(request: Request, concert_slug: str):
     # For now, return the same template for all concerts
     # In the future, this would fetch concert data from a database
+    app_id = get_secret("square-sandbox-app-id")
+    location_id = get_secret("square-sandbox-location-id")
     return templates.TemplateResponse("ticket-detail.html", {
         "request": request, 
         "current_page": "tickets",
         "concert_slug": concert_slug,
-        "artist_name": "John Novacek"  # This would come from database
+        "artist_name": "John Novacek",  # This would come from database
+        "square_app_id": app_id,
+        "square_location_id": location_id
     })
 
+@app.post("/process-payment")
+async def process_payment(payment_request: PaymentRequest):
+    """Process payment using Square API"""
+    try:
+        client = get_square_client()
+        
+        # Create a unique idempotency key
+        idempotency_key = str(uuid.uuid4())
+        
+        # Process the payment using the correct API format (matching working example)
+        result = client.payments.create(
+            source_id=payment_request.source_id,
+            idempotency_key=idempotency_key,
+            amount_money={
+                'amount': payment_request.amount,  # Amount in cents
+                'currency': payment_request.currency
+            },
+            buyer_email_address=payment_request.buyer_email
+            # Note: location_id removed as it's not in the working example
+        )
+        
+        if result.errors:
+            # Handle errors
+            logging.error(f"Payment failed: {result.errors}")
+            return {
+                "success": False,
+                "errors": [error.detail for error in result.errors],
+                "message": "Payment failed. Please try again."
+            }
+        else:
+            # Payment successful
+            payment = result.payment
+            logging.info(f"Payment successful: {payment.id}")
+            
+            return {
+                "success": True,
+                "payment_id": payment.id,
+                "status": payment.status,
+                "amount": payment.amount_money.amount,
+                "receipt_url": payment.receipt_url,
+                "message": "Payment processed successfully!"
+            }
+            
+    except Exception as e:
+        logging.error(f"Payment processing error: {e}")
+        return {
+            "success": False,
+            "message": "An error occurred while processing your payment."
+        }
 
 @app.get("/health")
 async def health_check():
