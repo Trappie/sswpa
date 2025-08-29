@@ -226,16 +226,26 @@ async def submit_contact_form(
 async def ticket_detail(request: Request, concert_slug: str):
     # For now, return the same template for all concerts
     # In the future, this would fetch concert data from a database
-    app_id = get_secret("square-sandbox-app-id")
-    location_id = get_secret("square-sandbox-location-id")
     return templates.TemplateResponse("ticket-detail.html", {
         "request": request, 
         "current_page": "tickets",
         "concert_slug": concert_slug,
         "artist_name": "John Novacek",  # This would come from database
-        "square_app_id": app_id,
-        "square_location_id": location_id
     })
+
+@app.get("/square-config")
+async def get_square_config():
+    """Get Square configuration for client-side initialization"""
+    try:
+        app_id = get_secret("square-sandbox-app-id")
+        location_id = get_secret("square-sandbox-location-id")
+        return {
+            "appId": app_id,
+            "locationId": location_id
+        }
+    except Exception as e:
+        logging.error(f"Failed to get Square config: {e}")
+        return {"error": "Failed to load payment configuration"}
 
 @app.post("/process-payment")
 async def process_payment(payment_request: PaymentRequest):

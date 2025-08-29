@@ -185,9 +185,15 @@
 
         async function initializeSquare() {
             try {
-                const appId = {{ square_app_id|tojson }};
-                const locationId = {{ square_location_id|tojson }};
-                const payments = Square.payments(appId, locationId);
+                // Fetch Square configuration from server
+                const configResponse = await fetch('/square-config');
+                const config = await configResponse.json();
+                
+                if (config.error) {
+                    throw new Error(config.error);
+                }
+                
+                const payments = Square.payments(config.appId, config.locationId);
                 
                 card = await payments.card();
                 await card.attach('#card-container');
