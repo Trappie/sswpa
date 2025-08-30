@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSWPA Admin - Database Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        /* Login Form Styles */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            margin-top: 10px;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+        
+        .success {
+            color: #27ae60;
+            margin-top: 10px;
+        }
+        
+        /* Admin Panel Styles */
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        /* Tab Styles */
+        .tab-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background: #ecf0f1;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+            background: white;
+        }
+        
+        .tab-btn:hover {
+            background: #d5dbdb;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Query Form */
+        .query-form {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        
+        .query-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .query-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .query-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        /* Reset Password Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    {% if not authenticated %}
+    <!-- Login Form -->
+    <div class="login-container">
+        <h1><i class="fas fa-database"></i> SSWPA Admin</h1>
+        
+        {% if not has_password %}
+        <h3>Create Admin Password</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="password">Set Password:</label>
+                <input type="password" id="password" name="password" required minlength="8">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="8">
+            </div>
+            <button type="submit" class="btn" name="action" value="create_password">Create Password</button>
+        </form>
+        {% else %}
+        <h3>Admin Login</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn" name="action" value="login">Login</button>
+        </form>
+        {% endif %}
+        
+        {% if error_message %}
+        <div class="error">{{ error_message }}</div>
+        {% endif %}
+        
+        {% if success_message %}
+        <div class="success">{{ success_message }}</div>
+        {% endif %}
+    </div>
+    
+    {% else %}
+    <!-- Admin Panel -->
+    <div class="container">
+        <div class="admin-header">
+            <h1><i class="fas fa-database"></i> SSWPA Database Management</h1>
+            <div>
+                <button onclick="showResetModal()" class="btn btn-danger" style="width: auto; margin-right: 10px;">Reset Password</button>
+                <a href="/admin/wm?action=logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        {% if success_message %}
+        <div class="alert alert-success" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <i class="fas fa-check-circle"></i> {{ success_message }}
+        </div>
+        {% endif %}
+        
+        {% if error_message %}
+        <div class="alert alert-error" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
+        </div>
+        {% endif %}
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                {% for table in tables %}
+                <button class="tab-btn{% if loop.first %} active{% endif %}" onclick="showTab('{{ table }}')">
+                    {{ table.replace('_', ' ').title() }}
+                </button>
+                {% endfor %}
+                <button class="tab-btn" onclick="showTab('custom_query')">Custom Query</button>
+                <button class="tab-btn" onclick="showTab('edit_items')">Edit Items</button>
+            </div>
+            
+            {% for table in tables %}
+            <div class="tab-content{% if loop.first %} active{% endif %}" id="{{ table }}">
+                <h3>{{ table.replace('_', ' ').title() }} Table</h3>
+                {% if table_data[table] %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for column in table_data[table][0].keys() %}
+                                <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in table_data[table] %}
+                            <tr>
+                                {% for value in row.values() %}
+                                <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p><strong>{{ table_data[table]|length }}</strong> records shown</p>
+                {% else %}
+                <p>No data in this table.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="tab-content" id="custom_query">
+                <h3>Custom SQL Query</h3>
+                <form method="POST" class="query-form">
+                    <div class="form-group">
+                        <label for="query">SQL Query (max 100 results):</label>
+                        <textarea id="query" name="query" placeholder="SELECT * FROM test_data WHERE id > 5;"></textarea>
+                    </div>
+                    <button type="submit" class="btn" name="action" value="execute_query">Execute Query</button>
+                </form>
+                
+                {% if query_result %}
+                <div class="query-result {% if query_result.success %}query-success{% else %}query-error{% endif %}">
+                    {% if query_result.success %}
+                        {% if query_result.results %}
+                        <strong>Query executed successfully! {{ query_result.row_count }} rows returned.</strong>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        {% for column in query_result.columns %}
+                                        <th>{{ column }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in query_result.results %}
+                                    <tr>
+                                        {% for value in row.values() %}
+                                        <td>{{ value }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <strong>{{ query_result.message }}</strong>
+                        {% endif %}
+                    {% else %}
+                    <strong>Error:</strong> {{ query_result.error }}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-content" id="edit_items">
+                <h3>Edit Items</h3>
+                <p>This tab will contain recital and ticket management functionality.</p>
+                <p><em>Coming soon...</em></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reset Password Modal -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideResetModal()">&times;</span>
+            <h3>Reset Password</h3>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="old_password">Current Password:</label>
+                    <input type="password" id="old_password" name="old_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password:</label>
+                    <input type="password" id="new_password" name="new_password" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="confirm_new_password">Confirm New Password:</label>
+                    <input type="password" id="confirm_new_password" name="confirm_new_password" required minlength="8">
+                </div>
+                <button type="submit" class="btn" name="action" value="reset_password">Reset Password</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
+        function showResetModal() {
+            document.getElementById('resetModal').style.display = 'block';
+        }
+        
+        function hideResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('resetModal');
+            if (event.target === modal) {
+                hideResetModal();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, Cookie, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -13,12 +13,41 @@ from square import Square
 from square.environment import SquareEnvironment
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from .database import init_database, write_test_data, get_test_data
+from .database import (
+    init_database, write_test_data, get_test_data,
+    has_admin_password, set_admin_password, verify_admin_password,
+    get_all_table_names, get_table_data, execute_custom_query,
+    ensure_complete_schema
+)
+import time
+import secrets
 
 # Load environment variables from .env file for local development
 load_dotenv()
 
 app = FastAPI(title="Steinway Society of Western Pennsylvania")
+
+# Simple session storage (in production, use Redis or database)
+admin_sessions = {}
+
+def is_admin_authenticated(session_id: str) -> bool:
+    """Check if admin session is valid"""
+    if not session_id or session_id not in admin_sessions:
+        return False
+    
+    session_time = admin_sessions[session_id]
+    # Session expires after 1 hour
+    if time.time() - session_time > 3600:
+        del admin_sessions[session_id]
+        return False
+    
+    return True
+
+def create_admin_session() -> str:
+    """Create new admin session"""
+    session_id = secrets.token_hex(32)
+    admin_sessions[session_id] = time.time()
+    return session_id
 
 # Initialize database on startup
 @app.on_event("startup")
@@ -341,6 +370,165 @@ async def test_db_read():
             "success": False,
             "message": f"Database read failed: {str(e)}"
         }
+
+@app.route("/admin/wm", methods=["GET", "POST"])
+async def admin_wm(request: Request):
+    """Admin database management interface"""
+    
+    # Handle logout
+    if request.query_params.get("action") == "logout":
+        response = RedirectResponse(url="/admin/wm", status_code=302)
+        response.delete_cookie("admin_session")
+        return response
+    
+    # Check authentication
+    session_id = request.cookies.get("admin_session", "")
+    authenticated = is_admin_authenticated(session_id)
+    
+    # Handle POST requests
+    if request.method == "POST":
+        form = await request.form()
+        action = form.get("action", "")
+        
+        if action == "create_password":
+            password = form.get("password", "")
+            confirm_password = form.get("confirm_password", "")
+            
+            if len(password) < 8:
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": False,
+                    "has_password": False,
+                    "error_message": "Password must be at least 8 characters long"
+                })
+            
+            if password != confirm_password:
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": False,
+                    "has_password": False,
+                    "error_message": "Passwords do not match"
+                })
+            
+            if set_admin_password(password):
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": False,
+                    "has_password": True,
+                    "success_message": "Password created successfully! Please login."
+                })
+            else:
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": False,
+                    "has_password": False,
+                    "error_message": "Failed to create password"
+                })
+        
+        elif action == "login":
+            password = form.get("password", "")
+            
+            if verify_admin_password(password):
+                session_id = create_admin_session()
+                response = RedirectResponse(url="/admin/wm", status_code=302)
+                response.set_cookie("admin_session", session_id, httponly=True)
+                return response
+            else:
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": False,
+                    "has_password": True,
+                    "error_message": "Invalid password"
+                })
+        
+        elif action == "reset_password" and authenticated:
+            old_password = form.get("old_password", "")
+            new_password = form.get("new_password", "")
+            confirm_new_password = form.get("confirm_new_password", "")
+            
+            if not verify_admin_password(old_password):
+                # Stay on the page, but this would need JavaScript to show modal again
+                pass
+            elif len(new_password) < 8:
+                pass
+            elif new_password != confirm_new_password:
+                pass
+            elif set_admin_password(new_password):
+                # Clear all sessions
+                admin_sessions.clear()
+                response = RedirectResponse(url="/admin/wm", status_code=302)
+                response.delete_cookie("admin_session")
+                return response
+        
+        elif action == "execute_query" and authenticated:
+            query = form.get("query", "").strip()
+            if query:
+                query_result = execute_custom_query(query)
+                
+                # Get table data for display
+                tables = get_all_table_names()
+                table_data = {}
+                for table in tables:
+                    try:
+                        table_data[table] = get_table_data(table)
+                    except:
+                        table_data[table] = []
+                
+                return templates.TemplateResponse("admin-wm.html", {
+                    "request": request,
+                    "authenticated": True,
+                    "tables": tables,
+                    "table_data": table_data,
+                    "query_result": query_result
+                })
+    
+    # Handle GET requests
+    if not authenticated:
+        has_password = has_admin_password()
+        return templates.TemplateResponse("admin-wm.html", {
+            "request": request,
+            "authenticated": False,
+            "has_password": has_password
+        })
+    
+    # Show admin dashboard
+    try:
+        # Ensure complete database schema exists
+        schema_success, schema_message = ensure_complete_schema()
+        
+        tables = get_all_table_names()
+        table_data = {}
+        for table in tables:
+            try:
+                table_data[table] = get_table_data(table)
+            except Exception as e:
+                logging.error(f"Error loading table {table}: {e}")
+                table_data[table] = []
+        
+        template_data = {
+            "request": request,
+            "authenticated": True,
+            "tables": tables,
+            "table_data": table_data
+        }
+        
+        # Add schema status message if any action was taken
+        if "created" in schema_message.lower():
+            template_data["success_message"] = schema_message
+        elif not schema_success:
+            template_data["error_message"] = schema_message
+        
+        return templates.TemplateResponse("admin-wm.html", template_data)
+        
+    except Exception as e:
+        logging.error(f"Error loading admin dashboard: {e}")
+        return templates.TemplateResponse("admin-wm.html", {
+            "request": request,
+            "authenticated": True,
+            "tables": [],
+            "table_data": {},
+            "error_message": "Error loading database tables"
+        })
 
 @app.get("/health")
 async def health_check():
