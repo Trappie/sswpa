@@ -13,11 +13,22 @@ from square import Square
 from square.environment import SquareEnvironment
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from .database import init_database, write_test_data, get_test_data
 
 # Load environment variables from .env file for local development
 load_dotenv()
 
 app = FastAPI(title="Steinway Society of Western Pennsylvania")
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    try:
+        init_database()
+        logging.info("Database initialized successfully")
+    except Exception as e:
+        logging.error(f"Database initialization failed, but continuing: {e}")
+        # Continue without crashing - database will be created on first use
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -295,6 +306,40 @@ async def process_payment(payment_request: PaymentRequest):
         return {
             "success": False,
             "message": "An error occurred while processing your payment."
+        }
+
+@app.post("/test-db-write")
+async def test_db_write(message: str = "Test message"):
+    """Test endpoint to write data to database"""
+    try:
+        record_id = write_test_data(message)
+        return {
+            "success": True,
+            "message": "Data written successfully",
+            "record_id": record_id
+        }
+    except Exception as e:
+        logging.error(f"Database write failed: {e}")
+        return {
+            "success": False,
+            "message": f"Database write failed: {str(e)}"
+        }
+
+@app.get("/test-db-read")
+async def test_db_read():
+    """Test endpoint to read data from database"""
+    try:
+        data = get_test_data()
+        return {
+            "success": True,
+            "data": data,
+            "count": len(data)
+        }
+    except Exception as e:
+        logging.error(f"Database read failed: {e}")
+        return {
+            "success": False,
+            "message": f"Database read failed: {str(e)}"
         }
 
 @app.get("/health")
