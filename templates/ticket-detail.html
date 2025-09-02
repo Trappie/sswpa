@@ -9,6 +9,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <style>
+        /* Hide number input spinners */
+        .no-spinners::-webkit-outer-spin-button,
+        .no-spinners::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .no-spinners {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
 <body>
     {% include 'nav.html' %}
@@ -29,21 +42,23 @@
                     <div class="event-details-card">
                         <div class="event-header">
                             <div class="event-date-large">
-                                <div class="month">MAR</div>
-                                <div class="day">23</div>
-                                <div class="year">2025</div>
+                                {% set date_parts = recital.event_date.split('-') %}
+                                {% set months = ['', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
+                                <div class="month">{{ months[date_parts[1]|int] }}</div>
+                                <div class="day">{{ date_parts[2]|int }}</div>
+                                <div class="year">{{ date_parts[0] }}</div>
                             </div>
                             <div class="event-title-info">
-                                <h2>John Novacek</h2>
-                                <p class="event-type">Piano Recital</p>
+                                <h2>{{ recital.artist_name }}</h2>
+                                <p class="event-type">{{ recital.title }}</p>
                                 <div class="event-metadata">
                                     <div class="meta-item">
                                         <i class="fas fa-clock"></i>
-                                        <span>Sunday, 3:00 PM</span>
+                                        <span>{{ recital.event_time }}</span>
                                     </div>
                                     <div class="meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kresge Recital Hall<br>College of Fine Arts, Carnegie Mellon University</span>
+                                        <span>{{ recital.venue }}{% if recital.venue_address %}<br>{{ recital.venue_address }}{% endif %}</span>
                                     </div>
                                 </div>
                             </div>
@@ -51,7 +66,11 @@
                         
                         <div class="event-description">
                             <h3>About This Concert</h3>
-                            <p>Join us for an enchanting evening with renowned pianist John Novacek. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            {% if recital.description %}
+                                <p>{{ recital.description }}</p>
+                            {% else %}
+                                <p>Join us for an enchanting evening with {{ recital.artist_name }}. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            {% endif %}
                             <p>All recitals include a "Meet the Artist" reception after the performance, providing an opportunity to personally connect with the artist.</p>
                         </div>
                     </div>
@@ -61,35 +80,26 @@
                         <h3>Select Tickets</h3>
                         
                         <div class="ticket-options">
-                            <div class="ticket-option">
-                                <div class="ticket-info">
-                                    <h4>Adult Admission</h4>
-                                    <p>General admission for adults</p>
-                                </div>
-                                <div class="ticket-controls">
-                                    <span class="price">$25.00</span>
-                                    <div class="quantity-selector">
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', -1)">-</button>
-                                        <input type="number" id="adult-qty" value="0" min="0" readonly>
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', 1)">+</button>
+                            {% if ticket_types %}
+                                {% for ticket_type in ticket_types %}
+                                <div class="ticket-option">
+                                    <div class="ticket-info">
+                                        <h4>{{ ticket_type.name }}</h4>
+                                        <p>{{ ticket_type.description or 'Standard admission' }}</p>
+                                    </div>
+                                    <div class="ticket-controls">
+                                        <span class="price">${{ "%.2f"|format(ticket_type.price_cents / 100) }}</span>
+                                        <div class="quantity-selector">
+                                            <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', -1)">-</button>
+                                            <input type="number" id="ticket_{{ ticket_type.id }}-qty" value="0" min="0" max="{{ ticket_type.max_quantity or 10 }}" onchange="updateTotal()" class="no-spinners">
+                                            <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', 1)">+</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="ticket-option">
-                                <div class="ticket-info">
-                                    <h4>Student Admission</h4>
-                                    <p>Discounted admission for students</p>
-                                </div>
-                                <div class="ticket-controls">
-                                    <span class="price">$10.00</span>
-                                    <div class="quantity-selector">
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', -1)">-</button>
-                                        <input type="number" id="student-qty" value="0" min="0" readonly>
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', 1)">+</button>
-                                    </div>
-                                </div>
-                            </div>
+                                {% endfor %}
+                            {% else %}
+                                <p>No tickets are currently available for this event.</p>
+                            {% endif %}
                         </div>
 
                         <div class="ticket-summary">
@@ -103,8 +113,31 @@
                             </div>
                         </div>
 
-                        <button id="add-to-cart" class="btn btn-primary" disabled onclick="addToCart()">
-                            Add to Cart
+                        <div id="checkout-form" style="display: none;">
+                            <h4>Checkout</h4>
+                            
+                            <div class="form-group">
+                                <label for="buyer-email">Email Address *</label>
+                                <input type="email" id="buyer-email" required>
+                            </div>
+                            
+                            <div class="payment-form">
+                                <div id="card-container">
+                                    <!-- Square payment form will be inserted here -->
+                                </div>
+                                <button id="pay-button" class="btn btn-primary-light" onclick="processPayment()">
+                                    Complete Purchase
+                                </button>
+                                <button id="cancel-button" class="btn btn-outline-light" onclick="cancelCheckout()">
+                                    Cancel
+                                </button>
+                            </div>
+                            
+                            <div id="payment-status" style="display: none;"></div>
+                        </div>
+
+                        <button id="add-to-cart" class="btn btn-primary-light" disabled onclick="showCheckout()">
+                            Purchase Tickets
                         </button>
 
                         <div class="important-notes">
@@ -127,40 +160,166 @@
     <script src="/static/js/main.js"></script>
     <script>
         // Ticket quantity and pricing logic
+        const recitalId = {{ recital.id }};
         const prices = {
-            adult: 25.00,
-            student: 10.00
+            {% for ticket_type in ticket_types %}
+            ticket_{{ ticket_type.id }}: {{ ticket_type.price_cents / 100 }}{% if not loop.last %},{% endif %}
+            {% endfor %}
         };
+        
+        const ticketTypes = {
+            {% for ticket_type in ticket_types %}
+            ticket_{{ ticket_type.id }}: {
+                id: {{ ticket_type.id }},
+                name: {{ ticket_type.name|tojson }},
+                price_cents: {{ ticket_type.price_cents }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+        
+        let card;
+        let currentTotal = 0;
 
         function updateQuantity(type, change) {
             const input = document.getElementById(type + '-qty');
+            if (!input) {
+                console.error('Input element not found for:', type + '-qty');
+                return;
+            }
             const currentValue = parseInt(input.value) || 0;
-            const newValue = Math.max(0, currentValue + change);
+            const maxValue = parseInt(input.getAttribute('max')) || 999;
+            const newValue = Math.max(0, Math.min(maxValue, currentValue + change));
             input.value = newValue;
             updateTotal();
         }
 
         function updateTotal() {
-            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
-            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+            let totalTickets = 0;
+            let totalAmount = 0;
             
-            const totalTickets = adultQty + studentQty;
-            const totalAmount = (adultQty * prices.adult) + (studentQty * prices.student);
+            // Calculate total for all ticket types
+            {% for ticket_type in ticket_types %}
+            const ticket{{ ticket_type.id }}Qty = parseInt(document.getElementById('ticket_{{ ticket_type.id }}-qty').value) || 0;
+            totalTickets += ticket{{ ticket_type.id }}Qty;
+            totalAmount += ticket{{ ticket_type.id }}Qty * prices.ticket_{{ ticket_type.id }};
+            {% endfor %}
             
             document.getElementById('total-tickets').textContent = totalTickets;
             document.getElementById('total-amount').textContent = '$' + totalAmount.toFixed(2);
+            
+            currentTotal = totalAmount;
             
             const addToCartBtn = document.getElementById('add-to-cart');
             addToCartBtn.disabled = totalTickets === 0;
         }
 
-        function addToCart() {
-            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
-            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+        async function initializeSquare() {
+            try {
+                // Fetch Square configuration from server
+                const configResponse = await fetch('/square-config');
+                const config = await configResponse.json();
+                
+                if (config.error) {
+                    throw new Error(config.error);
+                }
+                
+                const payments = Square.payments(config.appId, config.locationId);
+                
+                card = await payments.card();
+                await card.attach('#card-container');
+            } catch (error) {
+                console.error('Square initialization failed:', error);
+                document.getElementById('payment-status').innerHTML = '<div class="alert alert-error">Payment system unavailable. Please check your Square configuration.</div>';
+                document.getElementById('payment-status').style.display = 'block';
+                
+                // Don't let Square errors break the checkout form
+                card = null;
+            }
+        }
+
+        function showCheckout() {
+            if (currentTotal <= 0) return;
             
-            if (adultQty + studentQty > 0) {
-                // This would normally integrate with a payment system
-                alert('Tickets added to cart! (Payment integration would happen here)');
+            document.getElementById('add-to-cart').style.display = 'none';
+            document.getElementById('checkout-form').style.display = 'block';
+            
+            if (!card) {
+                initializeSquare();
+            }
+        }
+
+        function cancelCheckout() {
+            document.getElementById('checkout-form').style.display = 'none';
+            document.getElementById('add-to-cart').style.display = 'block';
+            document.getElementById('payment-status').style.display = 'none';
+        }
+
+        function collectTicketItems() {
+            const items = [];
+            {% for ticket_type in ticket_types %}
+            const qty{{ ticket_type.id }} = parseInt(document.getElementById('ticket_{{ ticket_type.id }}-qty').value) || 0;
+            if (qty{{ ticket_type.id }} > 0) {
+                items.push({
+                    ticket_type_id: {{ ticket_type.id }},
+                    quantity: qty{{ ticket_type.id }},
+                    price_per_ticket_cents: {{ ticket_type.price_cents }}
+                });
+            }
+            {% endfor %}
+            return items;
+        }
+
+        async function processPayment() {
+            const emailInput = document.getElementById('buyer-email');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                alert('Please enter your email address.');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('payment-status');
+            statusDiv.innerHTML = '<div class="alert alert-info">Processing payment...</div>';
+            statusDiv.style.display = 'block';
+            
+            try {
+                if (!card) {
+                    statusDiv.innerHTML = '<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>';
+                    return;
+                }
+                
+                const result = await card.tokenize();
+                
+                if (result.status === 'OK') {
+                    const response = await fetch('/process-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            source_id: result.token,
+                            amount: Math.round(currentTotal * 100), // Convert to cents
+                            currency: 'USD',
+                            buyer_email: email,
+                            recital_id: recitalId,
+                            ticket_items: collectTicketItems()
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        statusDiv.innerHTML = '<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>';
+                        document.getElementById('pay-button').style.display = 'none';
+                    } else {
+                        statusDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>';
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                statusDiv.innerHTML = '<div class="alert alert-error">Payment failed. Please try again.</div>';
             }
         }
 

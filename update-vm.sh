@@ -30,7 +30,7 @@ echo '🗑️  Removing old container...' &&
 sudo docker rm ${CONTAINER_NAME} 2>/dev/null || true &&
 echo '🚀 Starting new container...' &&
 sudo docker network create sswpa-net 2>/dev/null || true &&
-sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped --network sswpa-net ${FULL_IMAGE_NAME} &&
+sudo docker run -d --name ${CONTAINER_NAME} --restart unless-stopped --network sswpa-net -v /mnt/stateful_partition/sswpa-data:/data ${FULL_IMAGE_NAME} &&
 echo '✅ Container updated successfully!' &&
 echo '📊 Container status:' &&
 sudo docker ps | grep ${CONTAINER_NAME}

@@ -12,8 +12,8 @@ echo "🔧 Setting up Caddy container with HTTPS on COS VM: ${VM_NAME}"
 # Execute setup commands on the VM
 gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command="
 echo '📝 Creating Caddyfile...' &&
-sudo mkdir -p /tmp/caddy &&
-sudo tee /tmp/caddy/Caddyfile > /dev/null <<EOF
+sudo mkdir -p /mnt/stateful_partition/caddy &&
+sudo tee /mnt/stateful_partition/caddy/Caddyfile > /dev/null <<EOF
 sswpa.org, www.sswpa.org {
     reverse_proxy sswpa-web:8000
     encode gzip
@@ -46,7 +46,7 @@ sudo docker run -d \\
   --network sswpa-net \\
   -p 80:80 \\
   -p 443:443 \\
-  -v /tmp/caddy:/etc/caddy \\
+  -v /mnt/stateful_partition/caddy:/etc/caddy \\
   -v caddy_data:/data \\
   -v caddy_config:/config \\
   caddy:latest &&

@@ -75,6 +75,10 @@ coverage.xml
 # Local development
 .env.dev
 docker-compose.override.yml
+local-data/
+
+# Local SSL certificates (mkcert)
+*.pem
 
 # Docker
 .dockerignore

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSWPA Admin - Database Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        /* Login Form Styles */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            margin-top: 10px;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+        
+        .success {
+            color: #27ae60;
+            margin-top: 10px;
+        }
+        
+        /* Admin Panel Styles */
+        .admin-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        /* Tab Styles */
+        .tab-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background: #ecf0f1;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #2c3e50;
+            border-bottom-color: #3498db;
+            background: white;
+        }
+        
+        .tab-btn:hover {
+            background: #d5dbdb;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        /* Query Form */
+        .query-form {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        
+        .query-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .query-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .query-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        /* Reset Password Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            max-width: 90%;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        /* Edit Items Styles */
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-right: 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-upcoming {
+            background: #ffeaa7;
+            color: #2d3436;
+        }
+        
+        .status-on_sale {
+            background: #55a3ff;
+            color: white;
+        }
+        
+        .status-past {
+            background: #ddd;
+            color: #636e72;
+        }
+        
+        .status-cancelled {
+            background: #ff7675;
+            color: white;
+        }
+        
+        .status-active {
+            background: #00b894;
+            color: white;
+        }
+        
+        .status-inactive {
+            background: #636e72;
+            color: white;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    {% if not authenticated %}
+    <!-- Login Form -->
+    <div class="login-container">
+        <h1><i class="fas fa-database"></i> SSWPA Admin</h1>
+        
+        {% if not has_password %}
+        <h3>Create Admin Password</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="password">Set Password:</label>
+                <input type="password" id="password" name="password" required minlength="8">
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" id="confirm_password" name="confirm_password" required minlength="8">
+            </div>
+            <button type="submit" class="btn" name="action" value="create_password">Create Password</button>
+        </form>
+        {% else %}
+        <h3>Admin Login</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn" name="action" value="login">Login</button>
+        </form>
+        {% endif %}
+        
+        {% if error_message %}
+        <div class="error">{{ error_message }}</div>
+        {% endif %}
+        
+        {% if success_message %}
+        <div class="success">{{ success_message }}</div>
+        {% endif %}
+    </div>
+    
+    {% else %}
+    <!-- Admin Panel -->
+    <div class="container">
+        <div class="admin-header">
+            <h1><i class="fas fa-database"></i> SSWPA Database Management</h1>
+            <div>
+                <button onclick="showResetModal()" class="btn btn-danger" style="width: auto; margin-right: 10px;">Reset Password</button>
+                <a href="/admin/wm?action=logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+        
+        {% if success_message %}
+        <div class="alert alert-success" style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <i class="fas fa-check-circle"></i> {{ success_message }}
+        </div>
+        {% endif %}
+        
+        {% if error_message %}
+        <div class="alert alert-error" style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> {{ error_message }}
+        </div>
+        {% endif %}
+        
+        <div class="tab-container">
+            <div class="tab-nav">
+                {% for table in tables %}
+                <button class="tab-btn{% if loop.first %} active{% endif %}" onclick="showTab('{{ table }}')">
+                    {{ table.replace('_', ' ').title() }}
+                </button>
+                {% endfor %}
+                <button class="tab-btn" onclick="showTab('custom_query')">Custom Query</button>
+                <button class="tab-btn" onclick="showTab('edit_items')">Edit Items</button>
+            </div>
+            
+            {% for table in tables %}
+            <div class="tab-content{% if loop.first %} active{% endif %}" id="{{ table }}">
+                <h3>{{ table.replace('_', ' ').title() }} Table</h3>
+                {% if table_data[table] %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                {% for column in table_data[table][0].keys() %}
+                                <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in table_data[table] %}
+                            <tr>
+                                {% for value in row.values() %}
+                                <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p><strong>{{ table_data[table]|length }}</strong> records shown</p>
+                {% else %}
+                <p>No data in this table.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="tab-content" id="custom_query">
+                <h3>Custom SQL Query</h3>
+                <form method="POST" class="query-form">
+                    <div class="form-group">
+                        <label for="query">SQL Query (max 100 results):</label>
+                        <textarea id="query" name="query" placeholder="SELECT * FROM test_data WHERE id > 5;"></textarea>
+                    </div>
+                    <button type="submit" class="btn" name="action" value="execute_query">Execute Query</button>
+                </form>
+                
+                {% if query_result %}
+                <div class="query-result {% if query_result.success %}query-success{% else %}query-error{% endif %}">
+                    {% if query_result.success %}
+                        {% if query_result.results %}
+                        <strong>Query executed successfully! {{ query_result.row_count }} rows returned.</strong>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        {% for column in query_result.columns %}
+                                        <th>{{ column }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in query_result.results %}
+                                    <tr>
+                                        {% for value in row.values() %}
+                                        <td>{{ value }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <strong>{{ query_result.message }}</strong>
+                        {% endif %}
+                    {% else %}
+                    <strong>Error:</strong> {{ query_result.error }}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-content" id="edit_items">
+                <h3>Edit Items</h3>
+                
+                <!-- Filter Controls -->
+                <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    <label style="margin-right: 15px;">
+                        <input type="checkbox" id="includePast" {% if include_past %}checked{% endif %} onchange="togglePastRecitals()">
+                        Show past recitals
+                    </label>
+                </div>
+                
+                <!-- Recitals Section -->
+                <div style="margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h4>Recitals Management</h4>
+                            <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
+                                <i class="fas fa-info-circle"></i> New recitals automatically include Adult ($25) and Student ($10) tickets
+                            </p>
+                        </div>
+                        <button onclick="showRecitalModal()" class="btn" style="width: auto;">Add New Recital</button>
+                    </div>
+                    
+                    {% if recitals %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Artist</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for recital in recitals %}
+                                <tr>
+                                    <td>{{ recital.title }}</td>
+                                    <td>{{ recital.artist_name }}</td>
+                                    <td>{{ recital.event_date }}</td>
+                                    <td>{{ recital.event_time }}</td>
+                                    <td>{{ recital.venue }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ recital.status }}">
+                                            {{ recital.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="editRecital({{ recital.id }})" class="btn-small btn-edit">Edit</button>
+                                        <button onclick="deleteRecital({{ recital.id }}, '{{ recital.title }}')" class="btn-small btn-delete">Delete</button>
+                                        <button onclick="manageTickets({{ recital.id }}, '{{ recital.title }}')" class="btn-small">Tickets</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>No recitals found.</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Ticket Types Section -->
+                <div style="margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h4>Ticket Types Management</h4>
+                        <button onclick="showTicketTypeModal()" class="btn" style="width: auto;">Add New Ticket Type</button>
+                    </div>
+                    
+                    {% if all_ticket_types %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Recital</th>
+                                    <th>Ticket Name</th>
+                                    <th>Price</th>
+                                    <th>Description</th>
+                                    <th>Max Qty</th>
+                                    <th>Available</th>
+                                    <th>Active</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in all_ticket_types %}
+                                <tr>
+                                    <td>{{ ticket.recital_title }}</td>
+                                    <td>{{ ticket.name }}</td>
+                                    <td>${{ "%.2f"|format(ticket.price_cents / 100) }}</td>
+                                    <td>{{ ticket.description or '-' }}</td>
+                                    <td>{{ ticket.max_quantity }}</td>
+                                    <td>{{ ticket.total_available or 'Unlimited' }}</td>
+                                    <td>
+                                        <span class="status-badge {% if ticket.active %}status-active{% else %}status-inactive{% endif %}">
+                                            {{ 'Active' if ticket.active else 'Inactive' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="editTicketType({{ ticket.id }})" class="btn-small btn-edit">Edit</button>
+                                        <button onclick="deleteTicketType({{ ticket.id }}, '{{ ticket.name }}')" class="btn-small btn-delete">Delete</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p>No ticket types found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reset Password Modal -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideResetModal()">&times;</span>
+            <h3>Reset Password</h3>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="old_password">Current Password:</label>
+                    <input type="password" id="old_password" name="old_password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new_password">New Password:</label>
+                    <input type="password" id="new_password" name="new_password" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="confirm_new_password">Confirm New Password:</label>
+                    <input type="password" id="confirm_new_password" name="confirm_new_password" required minlength="8">
+                </div>
+                <button type="submit" class="btn" name="action" value="reset_password">Reset Password</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Recital Modal -->
+    <div id="recitalModal" class="modal">
+        <div class="modal-content" style="width: 600px;">
+            <span class="close" onclick="hideRecitalModal()">&times;</span>
+            <h3 id="recitalModalTitle">Add New Recital</h3>
+            <div id="recitalAutoTicketNotice" style="background: #e8f5e8; border: 1px solid #4caf50; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 14px;">
+                <i class="fas fa-ticket-alt" style="color: #4caf50;"></i> 
+                <strong>Auto-generated tickets:</strong> Adult tickets ($25.00) and Student tickets ($10.00) will be automatically created for this recital.
+            </div>
+            <form method="POST" id="recitalForm" enctype="multipart/form-data">
+                <input type="hidden" id="recital_id" name="recital_id">
+                <input type="hidden" id="recital_action" name="action" value="create_recital">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="r_title">Title*:</label>
+                        <input type="text" id="r_title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r_artist_name">Artist Name*:</label>
+                        <input type="text" id="r_artist_name" name="artist_name" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="r_description">Description:</label>
+                    <textarea id="r_description" name="description" rows="3" style="resize: vertical;"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="r_venue">Venue*:</label>
+                        <input type="text" id="r_venue" name="venue" required value="Kresge Recital Hall">
+                    </div>
+                    <div class="form-group">
+                        <label for="r_venue_address">Venue Address:</label>
+                        <input type="text" id="r_venue_address" name="venue_address" value="College of Fine Arts, Carnegie Mellon University">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="r_event_date">Event Date*:</label>
+                        <input type="date" id="r_event_date" name="event_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r_event_time">Event Time*:</label>
+                        <input type="time" id="r_event_time" name="event_time" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="r_status">Status*:</label>
+                        <select id="r_status" name="status" required>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="on_sale">On Sale</option>
+                            <option value="past">Past</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="r_slug">URL Slug*:</label>
+                        <input type="text" id="r_slug" name="slug" required placeholder="john-novacek-dec-2024">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="r_image">Artist Image:</label>
+                    <input type="file" id="r_image" name="image" accept="image/*" style="padding: 8px;">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        Upload JPG, PNG, or other image formats. Will be displayed on the ticket page.
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="recitalSubmitBtn">Create Recital</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Ticket Type Modal -->
+    <div id="ticketTypeModal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <span class="close" onclick="hideTicketTypeModal()">&times;</span>
+            <h3 id="ticketTypeModalTitle">Add New Ticket Type</h3>
+            <form method="POST" id="ticketTypeForm">
+                <input type="hidden" id="ticket_type_id" name="ticket_type_id">
+                <input type="hidden" id="ticket_action" name="action" value="create_ticket_type">
+                
+                <div class="form-group">
+                    <label for="t_recital_id">Recital*:</label>
+                    <select id="t_recital_id" name="recital_id" required>
+                        <option value="">Select a recital...</option>
+                        {% for recital in recitals %}
+                        <option value="{{ recital.id }}">{{ recital.title }} - {{ recital.event_date }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="t_name">Ticket Name*:</label>
+                        <input type="text" id="t_name" name="name" required placeholder="General Admission">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_price">Price ($)*:</label>
+                        <input type="number" id="t_price" name="price" step="0.01" min="0" required placeholder="25.00">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="t_description">Description:</label>
+                    <input type="text" id="t_description" name="description" placeholder="Standard seating">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="t_max_quantity">Max Quantity per Order:</label>
+                        <input type="number" id="t_max_quantity" name="max_quantity" min="1" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_total_available">Total Available:</label>
+                        <input type="number" id="t_total_available" name="total_available" min="0" placeholder="Leave blank for unlimited">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="t_sort_order">Sort Order:</label>
+                        <input type="number" id="t_sort_order" name="sort_order" value="0">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="t_active" name="active" checked>
+                            <label for="t_active">Active</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn" id="ticketTypeSubmitBtn">Create Ticket Type</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
+        function showResetModal() {
+            document.getElementById('resetModal').style.display = 'block';
+        }
+        
+        function hideResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const resetModal = document.getElementById('resetModal');
+            const recitalModal = document.getElementById('recitalModal');
+            const ticketTypeModal = document.getElementById('ticketTypeModal');
+            
+            if (event.target === resetModal) {
+                hideResetModal();
+            } else if (event.target === recitalModal) {
+                hideRecitalModal();
+            } else if (event.target === ticketTypeModal) {
+                hideTicketTypeModal();
+            }
+        }
+        
+        // Filter functions
+        function togglePastRecitals() {
+            const checkbox = document.getElementById('includePast');
+            const currentUrl = new URL(window.location);
+            if (checkbox.checked) {
+                currentUrl.searchParams.set('include_past', 'true');
+            } else {
+                currentUrl.searchParams.delete('include_past');
+            }
+            window.location = currentUrl.toString();
+        }
+        
+        // Recital modal functions
+        async function showRecitalModal(recitalId = null) {
+            const modal = document.getElementById('recitalModal');
+            const title = document.getElementById('recitalModalTitle');
+            const form = document.getElementById('recitalForm');
+            const submitBtn = document.getElementById('recitalSubmitBtn');
+            const action = document.getElementById('recital_action');
+            const notice = document.getElementById('recitalAutoTicketNotice');
+            
+            if (recitalId) {
+                // Edit mode - fetch recital data and populate form
+                title.textContent = 'Edit Recital';
+                submitBtn.textContent = 'Update Recital';
+                action.value = 'update_recital';
+                document.getElementById('recital_id').value = recitalId;
+                notice.style.display = 'none';  // Hide auto-ticket notice for edits
+                
+                // Fetch recital data and populate form
+                try {
+                    const response = await fetch(`/api/recital/${recitalId}`);
+                    if (response.ok) {
+                        const recital = await response.json();
+                        
+                        // Populate form fields
+                        document.getElementById('r_title').value = recital.title || '';
+                        document.getElementById('r_artist_name').value = recital.artist_name || '';
+                        document.getElementById('r_description').value = recital.description || '';
+                        document.getElementById('r_venue').value = recital.venue || '';
+                        document.getElementById('r_venue_address').value = recital.venue_address || '';
+                        document.getElementById('r_event_date').value = recital.event_date || '';
+                        document.getElementById('r_event_time').value = recital.event_time || '';
+                        document.getElementById('r_status').value = recital.status || '';
+                        document.getElementById('r_slug').value = recital.slug || '';
+                        
+                        // Note: Image file input cannot be pre-filled for security reasons
+                        // We could show current image filename in a separate element if needed
+                    } else {
+                        console.error('Failed to fetch recital data');
+                        alert('Failed to load recital data');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching recital data:', error);
+                    alert('Error loading recital data');
+                    return;
+                }
+            } else {
+                // Create mode
+                title.textContent = 'Add New Recital';
+                submitBtn.textContent = 'Create Recital';
+                action.value = 'create_recital';
+                form.reset();
+                document.getElementById('recital_id').value = '';
+                notice.style.display = 'block';  // Show auto-ticket notice for new recitals
+                
+                // Reset to default values
+                document.getElementById('r_venue').value = 'Kresge Recital Hall';
+                document.getElementById('r_venue_address').value = 'College of Fine Arts, Carnegie Mellon University';
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function hideRecitalModal() {
+            document.getElementById('recitalModal').style.display = 'none';
+        }
+        
+        function editRecital(recitalId) {
+            showRecitalModal(recitalId);
+        }
+        
+        function deleteRecital(recitalId, title) {
+            if (confirm(`Are you sure you want to delete "${title}"? This will also delete all associated tickets and orders.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_recital">
+                    <input type="hidden" name="recital_id" value="${recitalId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function manageTickets(recitalId, title) {
+            // Switch to Edit Items tab and show ticket types for this recital
+            showTab('edit_items');
+            // Could add filtering by recital here
+        }
+        
+        // Ticket Type modal functions
+        async function showTicketTypeModal(ticketTypeId = null) {
+            const modal = document.getElementById('ticketTypeModal');
+            const title = document.getElementById('ticketTypeModalTitle');
+            const form = document.getElementById('ticketTypeForm');
+            const submitBtn = document.getElementById('ticketTypeSubmitBtn');
+            const action = document.getElementById('ticket_action');
+            
+            if (ticketTypeId) {
+                // Edit mode - fetch ticket type data and populate form
+                title.textContent = 'Edit Ticket Type';
+                submitBtn.textContent = 'Update Ticket Type';
+                action.value = 'update_ticket_type';
+                document.getElementById('ticket_type_id').value = ticketTypeId;
+                
+                // Fetch ticket type data and populate form
+                try {
+                    const response = await fetch(`/api/ticket-type/${ticketTypeId}`);
+                    if (response.ok) {
+                        const ticketType = await response.json();
+                        
+                        // Populate form fields
+                        document.getElementById('t_recital_id').value = ticketType.recital_id || '';
+                        document.getElementById('t_name').value = ticketType.name || '';
+                        document.getElementById('t_price').value = ticketType.price_cents ? (ticketType.price_cents / 100).toFixed(2) : '';
+                        document.getElementById('t_description').value = ticketType.description || '';
+                        document.getElementById('t_max_quantity').value = ticketType.max_quantity || '';
+                        document.getElementById('t_total_available').value = ticketType.total_available || '';
+                        document.getElementById('t_sort_order').value = ticketType.sort_order || '';
+                        document.getElementById('t_active').checked = ticketType.active || false;
+                    } else {
+                        console.error('Failed to fetch ticket type data');
+                        alert('Failed to load ticket type data');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching ticket type data:', error);
+                    alert('Error loading ticket type data');
+                    return;
+                }
+            } else {
+                // Create mode
+                title.textContent = 'Add New Ticket Type';
+                submitBtn.textContent = 'Create Ticket Type';
+                action.value = 'create_ticket_type';
+                form.reset();
+                document.getElementById('ticket_type_id').value = '';
+                document.getElementById('t_active').checked = true;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function hideTicketTypeModal() {
+            document.getElementById('ticketTypeModal').style.display = 'none';
+        }
+        
+        function editTicketType(ticketTypeId) {
+            showTicketTypeModal(ticketTypeId);
+        }
+        
+        function deleteTicketType(ticketTypeId, name) {
+            if (confirm(`Are you sure you want to delete ticket type "${name}"? This will also delete all related order items.`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_ticket_type">
+                    <input type="hidden" name="ticket_type_id" value="${ticketTypeId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -28,9 +28,13 @@ COPY static/ ./static/
 COPY templates/ ./templates/
 COPY main.py .
 
+# Create data directory for database
+RUN mkdir -p /data
+
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' --shell /bin/bash user \
-    && chown -R user:user /app
+    && chown -R user:user /app \
+    && chown -R user:user /data
 USER user
 
 # Expose port
