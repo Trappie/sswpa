@@ -127,7 +127,39 @@ async def board(request: Request):
 
 @app.get("/tickets", response_class=HTMLResponse)
 async def tickets(request: Request):
-    return templates.TemplateResponse("tickets.html", {"request": request, "current_page": "tickets"})
+    try:
+        # Get upcoming and on_sale recitals
+        recitals = get_recitals(include_past=False)
+        # Filter to only show upcoming and on_sale recitals
+        display_recitals = [r for r in recitals if r['status'] in ['upcoming', 'on_sale']]
+        
+        # Add ticket types and price range for each recital
+        for recital in display_recitals:
+            ticket_types = get_ticket_types_for_recital(recital['id'])
+            active_tickets = [t for t in ticket_types if t['active']]
+            recital['ticket_types'] = active_tickets
+            
+            if active_tickets:
+                prices = [t['price_cents'] / 100 for t in active_tickets]
+                recital['min_price'] = min(prices)
+                recital['max_price'] = max(prices)
+            else:
+                recital['min_price'] = 0
+                recital['max_price'] = 0
+        
+        return templates.TemplateResponse("tickets.html", {
+            "request": request, 
+            "current_page": "tickets",
+            "recitals": display_recitals
+        })
+    except Exception as e:
+        logging.error(f"Error loading tickets page: {e}")
+        return templates.TemplateResponse("tickets.html", {
+            "request": request, 
+            "current_page": "tickets",
+            "recitals": [],
+            "error_message": "Unable to load concert information"
+        })
 
 @app.get("/young-artists/about", response_class=HTMLResponse)
 async def young_artists_about(request: Request):
@@ -551,6 +583,20 @@ async def admin_wm(request: Request):
             
             elif action == "update_recital":
                 recital_id = int(form.get('recital_id'))
+                
+                # Handle image upload for updates too
+                image_path = None
+                try:
+                    files = await request.form()
+                    if 'image' in files and hasattr(files['image'], 'filename') and files['image'].filename:
+                        image_path = await save_uploaded_image(files['image'])
+                except Exception as e:
+                    logging.error(f"Error handling image upload during update: {e}")
+                
+                # Get current recital to preserve existing image if no new one uploaded
+                current_recital = get_recital_by_id(recital_id)
+                final_image_url = image_path if image_path else current_recital.get('image_url')
+                
                 recital_data = {
                     'title': form.get('title'),
                     'artist_name': form.get('artist_name'),
@@ -561,7 +607,7 @@ async def admin_wm(request: Request):
                     'event_time': form.get('event_time'),
                     'status': form.get('status'),
                     'slug': form.get('slug'),
-                    'image_url': form.get('image_url')
+                    'image_url': final_image_url
                 }
                 result = update_recital(recital_id, recital_data)
                 message = "Recital updated successfully!" if result else "Failed to update recital"

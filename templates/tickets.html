@@ -28,40 +28,66 @@
                     <p>Join us for our exciting 2025-26 Artist Recital Series! All recitals include a "Meet the Artist" reception after the performance.</p>
 
                     <div class="concerts-grid">
-                        <div class="concert-card">
-                            <div class="artist-image">
-                                <img src="/static/images/Aljosa Jurinic-min.jpg" alt="Aljosa Jurinic" class="artist-photo">
+                        {% if recitals %}
+                            {% for recital in recitals %}
+                            <div class="concert-card">
+                                <div class="artist-image">
+                                    {% if recital.image_url %}
+                                        <img src="{{ recital.image_url }}" alt="{{ recital.artist_name }}" class="artist-photo">
+                                    {% else %}
+                                        <img src="/static/images/placeholder-artist.jpg" alt="{{ recital.artist_name }}" class="artist-photo">
+                                    {% endif %}
+                                </div>
+                                <div class="content-section">
+                                    <div class="date-badge">
+                                        {% set date_parts = recital.event_date.split('-') %}
+                                        {% set months = ['', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
+                                        <div class="month-day">{{ months[date_parts[1]|int] }} {{ date_parts[2]|int }}</div>
+                                        <div class="year">{{ date_parts[0] }}</div>
+                                    </div>
+                                    <div class="artist-info">
+                                        <h3 class="artist-name">{{ recital.artist_name }}</h3>
+                                        <p class="artist-role">{{ recital.title }}</p>
+                                    </div>
+                                    <div class="event-meta">
+                                        <div class="meta-item">
+                                            <i class="fas fa-clock"></i>
+                                            <span>{{ recital.event_time if recital.event_time else 'TBD' }}</span>
+                                        </div>
+                                        <div class="meta-item">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>{{ recital.venue }}{% if recital.venue_address %}, {{ recital.venue_address }}{% endif %}</span>
+                                        </div>
+                                    </div>
+                                    <div class="pricing-section">
+                                        <div class="pricing-info">
+                                            {% if recital.min_price and recital.max_price %}
+                                                {% if recital.min_price == recital.max_price %}
+                                                    <div class="price-range">${{ "%.0f"|format(recital.min_price) }}</div>
+                                                {% else %}
+                                                    <div class="price-range">${{ "%.0f"|format(recital.min_price) }} - ${{ "%.0f"|format(recital.max_price) }}</div>
+                                                {% endif %}
+                                            {% endif %}
+                                            <div class="free-note">Free for SSWPA Members & CMU Students</div>
+                                        </div>
+                                    </div>
+                                    <div class="button-section">
+                                        {% if recital.status == 'on_sale' %}
+                                            <a href="/tickets/{{ recital.slug }}" class="btn btn-primary-light">PURCHASE TICKETS</a>
+                                        {% else %}
+                                            <button class="btn btn-primary-light" disabled>TICKETS AVAILABLE SOON</button>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
-                            <div class="content-section">
-                                <div class="date-badge">
-                                    <div class="month-day">OCT 19</div>
-                                    <div class="year">2025</div>
-                                </div>
-                                <div class="artist-info">
-                                    <h3 class="artist-name">Aljoša Jurinić</h3>
-                                    <p class="artist-role">Pianist</p>
-                                </div>
-                                <div class="event-meta">
-                                    <div class="meta-item">
-                                        <i class="fas fa-clock"></i>
-                                        <span>3:00 PM</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kresge Recital Hall, Carnegie Mellon University</span>
-                                    </div>
-                                </div>
-                                <div class="pricing-section">
-                                    <div class="pricing-info">
-                                        <div class="price-range">$10 - $25</div>
-                                        <div class="free-note">Free for SSWPA Members & CMU Students</div>
-                                    </div>
-                                </div>
-                                <div class="button-section">
-                                    <button class="btn btn-primary-light" disabled>TICKETS AVAILABLE SOON</button>
+                            {% endfor %}
+                        {% else %}
+                            <div class="concert-card">
+                                <div class="content-section">
+                                    <p>{% if error_message %}{{ error_message }}{% else %}No concerts currently available for ticket purchase.{% endif %}</p>
                                 </div>
                             </div>
-                        </div>
+                        {% endif %}
                     </div>
 
                     <p>No ticket purchase is required for Steinway Society members and CMU students (with ID).</p>
