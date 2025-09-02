@@ -1,0 +1,9 @@
+localhost:443 {
+	tls /etc/caddy/certs/localhost+2.pem /etc/caddy/certs/localhost+2-key.pem
+	reverse_proxy sswpa-local:8000
+}
+
+127.0.0.1:443 {
+	tls /etc/caddy/certs/localhost+2.pem /etc/caddy/certs/localhost+2-key.pem
+	reverse_proxy sswpa-local:8000
+}
