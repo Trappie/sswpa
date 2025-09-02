@@ -30,21 +30,23 @@
                     <div class="event-details-card">
                         <div class="event-header">
                             <div class="event-date-large">
-                                <div class="month">MAR</div>
-                                <div class="day">23</div>
-                                <div class="year">2025</div>
+                                {% set date_parts = recital.event_date.split('-') %}
+                                {% set months = ['', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'] %}
+                                <div class="month">{{ months[date_parts[1]|int] }}</div>
+                                <div class="day">{{ date_parts[2]|int }}</div>
+                                <div class="year">{{ date_parts[0] }}</div>
                             </div>
                             <div class="event-title-info">
-                                <h2>John Novacek</h2>
-                                <p class="event-type">Piano Recital</p>
+                                <h2>{{ recital.artist_name }}</h2>
+                                <p class="event-type">{{ recital.title }}</p>
                                 <div class="event-metadata">
                                     <div class="meta-item">
                                         <i class="fas fa-clock"></i>
-                                        <span>Sunday, 3:00 PM</span>
+                                        <span>{{ recital.event_time }}</span>
                                     </div>
                                     <div class="meta-item">
                                         <i class="fas fa-map-marker-alt"></i>
-                                        <span>Kresge Recital Hall<br>College of Fine Arts, Carnegie Mellon University</span>
+                                        <span>{{ recital.venue }}{% if recital.venue_address %}<br>{{ recital.venue_address }}{% endif %}</span>
                                     </div>
                                 </div>
                             </div>
@@ -52,7 +54,11 @@
                         
                         <div class="event-description">
                             <h3>About This Concert</h3>
-                            <p>Join us for an enchanting evening with renowned pianist John Novacek. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            {% if recital.description %}
+                                <p>{{ recital.description }}</p>
+                            {% else %}
+                                <p>Join us for an enchanting evening with {{ recital.artist_name }}. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            {% endif %}
                             <p>All recitals include a "Meet the Artist" reception after the performance, providing an opportunity to personally connect with the artist.</p>
                         </div>
                     </div>
@@ -62,35 +68,26 @@
                         <h3>Select Tickets</h3>
                         
                         <div class="ticket-options">
-                            <div class="ticket-option">
-                                <div class="ticket-info">
-                                    <h4>Adult Admission</h4>
-                                    <p>General admission for adults</p>
-                                </div>
-                                <div class="ticket-controls">
-                                    <span class="price">$25.00</span>
-                                    <div class="quantity-selector">
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', -1)">-</button>
-                                        <input type="number" id="adult-qty" value="0" min="0" readonly>
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('adult', 1)">+</button>
+                            {% if ticket_types %}
+                                {% for ticket_type in ticket_types %}
+                                <div class="ticket-option">
+                                    <div class="ticket-info">
+                                        <h4>{{ ticket_type.name }}</h4>
+                                        <p>{{ ticket_type.description or 'Standard admission' }}</p>
+                                    </div>
+                                    <div class="ticket-controls">
+                                        <span class="price">${{ "%.2f"|format(ticket_type.price_cents / 100) }}</span>
+                                        <div class="quantity-selector">
+                                            <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', -1)">-</button>
+                                            <input type="number" id="ticket_{{ ticket_type.id }}-qty" value="0" min="0" max="{{ ticket_type.max_quantity or 10 }}" readonly>
+                                            <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', 1)">+</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="ticket-option">
-                                <div class="ticket-info">
-                                    <h4>Student Admission</h4>
-                                    <p>Discounted admission for students</p>
-                                </div>
-                                <div class="ticket-controls">
-                                    <span class="price">$10.00</span>
-                                    <div class="quantity-selector">
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', -1)">-</button>
-                                        <input type="number" id="student-qty" value="0" min="0" readonly>
-                                        <button type="button" class="qty-btn" onclick="updateQuantity('student', 1)">+</button>
-                                    </div>
-                                </div>
-                            </div>
+                                {% endfor %}
+                            {% else %}
+                                <p>No tickets are currently available for this event.</p>
+                            {% endif %}
                         </div>
 
                         <div class="ticket-summary">
@@ -152,8 +149,9 @@
     <script>
         // Ticket quantity and pricing logic
         const prices = {
-            adult: 25.00,
-            student: 10.00
+            {% for ticket_type in ticket_types %}
+            ticket_{{ ticket_type.id }}: {{ ticket_type.price_cents / 100 }},
+            {% endfor %}
         };
         
         let card;
@@ -168,11 +166,15 @@
         }
 
         function updateTotal() {
-            const adultQty = parseInt(document.getElementById('adult-qty').value) || 0;
-            const studentQty = parseInt(document.getElementById('student-qty').value) || 0;
+            let totalTickets = 0;
+            let totalAmount = 0;
             
-            const totalTickets = adultQty + studentQty;
-            const totalAmount = (adultQty * prices.adult) + (studentQty * prices.student);
+            // Calculate total for all ticket types
+            {% for ticket_type in ticket_types %}
+            const ticket{{ ticket_type.id }}Qty = parseInt(document.getElementById('ticket_{{ ticket_type.id }}-qty').value) || 0;
+            totalTickets += ticket{{ ticket_type.id }}Qty;
+            totalAmount += ticket{{ ticket_type.id }}Qty * prices.ticket_{{ ticket_type.id }};
+            {% endfor %}
             
             document.getElementById('total-tickets').textContent = totalTickets;
             document.getElementById('total-amount').textContent = '$' + totalAmount.toFixed(2);

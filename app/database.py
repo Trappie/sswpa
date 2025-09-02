@@ -334,6 +334,14 @@ def get_recital_by_id(recital_id: int) -> dict:
         result = cursor.fetchone()
         return dict(result) if result else None
 
+def get_recital_by_slug(slug: str) -> dict:
+    """Get a single recital by slug"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM recitals WHERE slug = ?", (slug,))
+        result = cursor.fetchone()
+        return dict(result) if result else None
+
 def create_recital(recital_data: dict) -> int:
     """Create a new recital with default ticket types"""
     try:

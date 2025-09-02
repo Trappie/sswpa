@@ -17,7 +17,7 @@ from .database import (
     init_database, write_test_data, get_test_data,
     has_admin_password, set_admin_password, verify_admin_password,
     get_all_table_names, get_table_data, execute_custom_query,
-    ensure_complete_schema, get_recitals, get_recital_by_id,
+    ensure_complete_schema, get_recitals, get_recital_by_id, get_recital_by_slug,
     create_recital, update_recital, delete_recital,
     get_ticket_types_for_recital, get_ticket_type_by_id,
     create_ticket_type, update_ticket_type, delete_ticket_type
@@ -336,14 +336,32 @@ async def submit_contact_form(
 
 @app.get("/tickets/{concert_slug}", response_class=HTMLResponse)
 async def ticket_detail(request: Request, concert_slug: str):
-    # For now, return the same template for all concerts
-    # In the future, this would fetch concert data from a database
-    return templates.TemplateResponse("ticket-detail.html", {
-        "request": request, 
-        "current_page": "tickets",
-        "concert_slug": concert_slug,
-        "artist_name": "John Novacek",  # This would come from database
-    })
+    try:
+        # Fetch recital by slug
+        recital = get_recital_by_slug(concert_slug)
+        if not recital:
+            raise HTTPException(status_code=404, detail="Concert not found")
+        
+        # Only allow access to on_sale recitals
+        if recital['status'] != 'on_sale':
+            raise HTTPException(status_code=404, detail="Tickets not yet available for this concert")
+        
+        # Get active ticket types for this recital
+        ticket_types = get_ticket_types_for_recital(recital['id'])
+        active_ticket_types = [t for t in ticket_types if t['active']]
+        
+        return templates.TemplateResponse("ticket-detail.html", {
+            "request": request, 
+            "current_page": "tickets",
+            "recital": recital,
+            "ticket_types": active_ticket_types,
+            "artist_name": recital['artist_name']  # Keep for backwards compatibility
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error loading ticket detail for {concert_slug}: {e}")
+        raise HTTPException(status_code=500, detail="Unable to load concert details")
 
 @app.get("/square-config")
 async def get_square_config():
