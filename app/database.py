@@ -314,3 +314,213 @@ def execute_custom_query(query: str, limit: int = 100) -> dict:
             "success": False,
             "error": str(e)
         }
+
+# Recital CRUD operations
+def get_recitals(include_past: bool = False) -> list:
+    """Get all recitals, optionally including past ones"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if include_past:
+            cursor.execute("SELECT * FROM recitals ORDER BY event_date DESC")
+        else:
+            cursor.execute("SELECT * FROM recitals WHERE status != 'past' ORDER BY event_date ASC")
+        return [dict(row) for row in cursor.fetchall()]
+
+def get_recital_by_id(recital_id: int) -> dict:
+    """Get a single recital by ID"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM recitals WHERE id = ?", (recital_id,))
+        result = cursor.fetchone()
+        return dict(result) if result else None
+
+def create_recital(recital_data: dict) -> int:
+    """Create a new recital with default ticket types"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Create the recital
+            cursor.execute("""
+                INSERT INTO recitals (
+                    title, artist_name, description, venue, venue_address,
+                    event_date, event_time, status, slug, image_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                recital_data['title'], recital_data['artist_name'], recital_data.get('description'),
+                recital_data['venue'], recital_data.get('venue_address'),
+                recital_data['event_date'], recital_data['event_time'],
+                recital_data.get('status', 'upcoming'), recital_data['slug'],
+                recital_data.get('image_url')
+            ))
+            
+            recital_id = cursor.lastrowid
+            
+            # Create default ticket types
+            default_tickets = [
+                {
+                    'name': 'Adult',
+                    'price_cents': 2500,  # $25.00
+                    'description': 'General admission for adults',
+                    'max_quantity': 10,
+                    'sort_order': 1,
+                    'active': 1
+                },
+                {
+                    'name': 'Student',
+                    'price_cents': 1000,  # $10.00
+                    'description': 'Student discount',
+                    'max_quantity': 10,
+                    'sort_order': 2,
+                    'active': 1
+                }
+            ]
+            
+            for ticket in default_tickets:
+                cursor.execute("""
+                    INSERT INTO ticket_types (
+                        recital_id, name, price_cents, description, max_quantity,
+                        total_available, sort_order, active
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    recital_id, ticket['name'], ticket['price_cents'],
+                    ticket['description'], ticket['max_quantity'],
+                    None,  # unlimited availability
+                    ticket['sort_order'], ticket['active']
+                ))
+            
+            conn.commit()
+            logging.info(f"Created recital {recital_id} with default ticket types")
+            return recital_id
+            
+    except Exception as e:
+        logging.error(f"Failed to create recital: {e}")
+        return False
+
+def update_recital(recital_id: int, recital_data: dict) -> bool:
+    """Update an existing recital"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE recitals SET
+                    title = ?, artist_name = ?, description = ?, venue = ?, venue_address = ?,
+                    event_date = ?, event_time = ?, status = ?, slug = ?, image_url = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (
+                recital_data['title'], recital_data['artist_name'], recital_data.get('description'),
+                recital_data['venue'], recital_data.get('venue_address'),
+                recital_data['event_date'], recital_data['event_time'],
+                recital_data.get('status', 'upcoming'), recital_data['slug'],
+                recital_data.get('image_url'), recital_id
+            ))
+            conn.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        logging.error(f"Failed to update recital: {e}")
+        return False
+
+def delete_recital(recital_id: int) -> bool:
+    """Delete a recital and its related data"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            # Delete in order: order_items -> orders -> ticket_types -> recitals
+            cursor.execute("""
+                DELETE FROM order_items WHERE ticket_type_id IN 
+                (SELECT id FROM ticket_types WHERE recital_id = ?)
+            """, (recital_id,))
+            cursor.execute("DELETE FROM orders WHERE recital_id = ?", (recital_id,))
+            cursor.execute("DELETE FROM ticket_types WHERE recital_id = ?", (recital_id,))
+            cursor.execute("DELETE FROM recitals WHERE id = ?", (recital_id,))
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.error(f"Failed to delete recital: {e}")
+        return False
+
+# Ticket Type CRUD operations
+def get_ticket_types_for_recital(recital_id: int) -> list:
+    """Get all ticket types for a specific recital"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT tt.*, r.title as recital_title 
+            FROM ticket_types tt
+            JOIN recitals r ON tt.recital_id = r.id
+            WHERE tt.recital_id = ? 
+            ORDER BY tt.sort_order ASC
+        """, (recital_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
+def get_ticket_type_by_id(ticket_type_id: int) -> dict:
+    """Get a single ticket type by ID"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT tt.*, r.title as recital_title 
+            FROM ticket_types tt
+            JOIN recitals r ON tt.recital_id = r.id
+            WHERE tt.id = ?
+        """, (ticket_type_id,))
+        result = cursor.fetchone()
+        return dict(result) if result else None
+
+def create_ticket_type(ticket_data: dict) -> int:
+    """Create a new ticket type"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO ticket_types (
+                    recital_id, name, price_cents, description, max_quantity,
+                    total_available, sort_order, active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                ticket_data['recital_id'], ticket_data['name'], ticket_data['price_cents'],
+                ticket_data.get('description'), ticket_data.get('max_quantity', 10),
+                ticket_data.get('total_available'), ticket_data.get('sort_order', 0),
+                ticket_data.get('active', 1)
+            ))
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        logging.error(f"Failed to create ticket type: {e}")
+        return False
+
+def update_ticket_type(ticket_type_id: int, ticket_data: dict) -> bool:
+    """Update an existing ticket type"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE ticket_types SET
+                    recital_id = ?, name = ?, price_cents = ?, description = ?,
+                    max_quantity = ?, total_available = ?, sort_order = ?, active = ?
+                WHERE id = ?
+            """, (
+                ticket_data['recital_id'], ticket_data['name'], ticket_data['price_cents'],
+                ticket_data.get('description'), ticket_data.get('max_quantity', 10),
+                ticket_data.get('total_available'), ticket_data.get('sort_order', 0),
+                ticket_data.get('active', 1), ticket_type_id
+            ))
+            conn.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        logging.error(f"Failed to update ticket type: {e}")
+        return False
+
+def delete_ticket_type(ticket_type_id: int) -> bool:
+    """Delete a ticket type and its related order items"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            # Delete order items first, then ticket type
+            cursor.execute("DELETE FROM order_items WHERE ticket_type_id = ?", (ticket_type_id,))
+            cursor.execute("DELETE FROM ticket_types WHERE id = ?", (ticket_type_id,))
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.error(f"Failed to delete ticket type: {e}")
+        return False

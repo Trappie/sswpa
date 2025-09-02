@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Request, Form, Cookie, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, File, UploadFile, Cookie, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import smtplib
@@ -17,10 +17,15 @@ from .database import (
     init_database, write_test_data, get_test_data,
     has_admin_password, set_admin_password, verify_admin_password,
     get_all_table_names, get_table_data, execute_custom_query,
-    ensure_complete_schema
+    ensure_complete_schema, get_recitals, get_recital_by_id,
+    create_recital, update_recital, delete_recital,
+    get_ticket_types_for_recital, get_ticket_type_by_id,
+    create_ticket_type, update_ticket_type, delete_ticket_type
 )
 import time
 import secrets
+import shutil
+from pathlib import Path
 
 # Load environment variables from .env file for local development
 load_dotenv()
@@ -49,14 +54,49 @@ def create_admin_session() -> str:
     admin_sessions[session_id] = time.time()
     return session_id
 
+async def save_uploaded_image(image: UploadFile) -> str:
+    """Save uploaded image to persistent storage and return relative path"""
+    if not image or not image.filename:
+        return None
+    
+    # Create images directory in persistent storage
+    images_dir = Path("/data/images")
+    images_dir.mkdir(exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = Path(image.filename).suffix.lower()
+    unique_filename = f"{secrets.token_hex(8)}{file_extension}"
+    file_path = images_dir / unique_filename
+    
+    # Save the uploaded file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        
+        # Return relative path for URL serving
+        return f"/images/{unique_filename}"
+    except Exception as e:
+        logging.error(f"Failed to save image: {e}")
+        return None
+
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
     try:
         init_database()
         logging.info("Database initialized successfully")
+        
+        # Create images directory
+        images_dir = Path("/data/images")
+        images_dir.mkdir(exist_ok=True)
+        logging.info("Images directory ensured")
+        
+        # Mount images directory if it exists now
+        if images_dir.exists():
+            app.mount("/images", StaticFiles(directory="/data/images"), name="images")
+            
     except Exception as e:
-        logging.error(f"Database initialization failed, but continuing: {e}")
+        logging.error(f"Startup initialization failed, but continuing: {e}")
         # Continue without crashing - database will be created on first use
 
 # Mount static files
@@ -481,6 +521,100 @@ async def admin_wm(request: Request):
                     "table_data": table_data,
                     "query_result": query_result
                 })
+        
+        # Handle recital operations
+        elif action in ["create_recital", "update_recital", "delete_recital"] and authenticated:
+            if action == "create_recital":
+                # Handle image upload
+                image_path = None
+                try:
+                    files = await request.form()
+                    if 'image' in files and hasattr(files['image'], 'filename') and files['image'].filename:
+                        image_path = await save_uploaded_image(files['image'])
+                except Exception as e:
+                    logging.error(f"Error handling image upload: {e}")
+                
+                recital_data = {
+                    'title': form.get('title'),
+                    'artist_name': form.get('artist_name'),
+                    'description': form.get('description'),
+                    'venue': form.get('venue'),
+                    'venue_address': form.get('venue_address'),
+                    'event_date': form.get('event_date'),
+                    'event_time': form.get('event_time'),
+                    'status': form.get('status', 'upcoming'),
+                    'slug': form.get('slug'),
+                    'image_url': image_path
+                }
+                result = create_recital(recital_data)
+                message = "Recital created successfully with default Adult ($25) and Student ($10) tickets!" if result else "Failed to create recital"
+            
+            elif action == "update_recital":
+                recital_id = int(form.get('recital_id'))
+                recital_data = {
+                    'title': form.get('title'),
+                    'artist_name': form.get('artist_name'),
+                    'description': form.get('description'),
+                    'venue': form.get('venue'),
+                    'venue_address': form.get('venue_address'),
+                    'event_date': form.get('event_date'),
+                    'event_time': form.get('event_time'),
+                    'status': form.get('status'),
+                    'slug': form.get('slug'),
+                    'image_url': form.get('image_url')
+                }
+                result = update_recital(recital_id, recital_data)
+                message = "Recital updated successfully!" if result else "Failed to update recital"
+            
+            elif action == "delete_recital":
+                recital_id = int(form.get('recital_id'))
+                result = delete_recital(recital_id)
+                message = "Recital deleted successfully!" if result else "Failed to delete recital"
+            
+            # Redirect back to admin panel with message
+            response = RedirectResponse(url="/admin/wm", status_code=302)
+            # Note: In a real app, you'd use flash messages or session storage
+            return response
+        
+        # Handle ticket type operations
+        elif action in ["create_ticket_type", "update_ticket_type", "delete_ticket_type"] and authenticated:
+            if action == "create_ticket_type":
+                ticket_data = {
+                    'recital_id': int(form.get('recital_id')),
+                    'name': form.get('name'),
+                    'price_cents': int(float(form.get('price', 0)) * 100),  # Convert dollars to cents
+                    'description': form.get('description'),
+                    'max_quantity': int(form.get('max_quantity', 10)),
+                    'total_available': int(form.get('total_available')) if form.get('total_available') else None,
+                    'sort_order': int(form.get('sort_order', 0)),
+                    'active': 1 if form.get('active') else 0
+                }
+                result = create_ticket_type(ticket_data)
+                message = "Ticket type created successfully!" if result else "Failed to create ticket type"
+            
+            elif action == "update_ticket_type":
+                ticket_type_id = int(form.get('ticket_type_id'))
+                ticket_data = {
+                    'recital_id': int(form.get('recital_id')),
+                    'name': form.get('name'),
+                    'price_cents': int(float(form.get('price', 0)) * 100),
+                    'description': form.get('description'),
+                    'max_quantity': int(form.get('max_quantity', 10)),
+                    'total_available': int(form.get('total_available')) if form.get('total_available') else None,
+                    'sort_order': int(form.get('sort_order', 0)),
+                    'active': 1 if form.get('active') else 0
+                }
+                result = update_ticket_type(ticket_type_id, ticket_data)
+                message = "Ticket type updated successfully!" if result else "Failed to update ticket type"
+            
+            elif action == "delete_ticket_type":
+                ticket_type_id = int(form.get('ticket_type_id'))
+                result = delete_ticket_type(ticket_type_id)
+                message = "Ticket type deleted successfully!" if result else "Failed to delete ticket type"
+            
+            # Redirect back to admin panel
+            response = RedirectResponse(url="/admin/wm", status_code=302)
+            return response
     
     # Handle GET requests
     if not authenticated:
@@ -505,11 +639,24 @@ async def admin_wm(request: Request):
                 logging.error(f"Error loading table {table}: {e}")
                 table_data[table] = []
         
+        # Get recital data for Edit Items tab
+        include_past = request.query_params.get("include_past") == "true"
+        recitals = get_recitals(include_past=include_past)
+        
+        # Get ticket types for all recitals
+        all_ticket_types = []
+        for recital in recitals:
+            ticket_types = get_ticket_types_for_recital(recital['id'])
+            all_ticket_types.extend(ticket_types)
+        
         template_data = {
             "request": request,
             "authenticated": True,
             "tables": tables,
-            "table_data": table_data
+            "table_data": table_data,
+            "recitals": recitals,
+            "all_ticket_types": all_ticket_types,
+            "include_past": include_past
         }
         
         # Add schema status message if any action was taken
@@ -529,6 +676,42 @@ async def admin_wm(request: Request):
             "table_data": {},
             "error_message": "Error loading database tables"
         })
+
+@app.get("/api/recital/{recital_id}")
+async def get_recital(recital_id: int, request: Request):
+    """API endpoint to fetch recital data for editing"""
+    # Check admin authentication using custom session system
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        recital = get_recital_by_id(recital_id)
+        if not recital:
+            raise HTTPException(status_code=404, detail="Recital not found")
+        
+        return JSONResponse(content=recital)
+    except Exception as e:
+        logging.error(f"Error fetching recital {recital_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/ticket-type/{ticket_type_id}")
+async def get_ticket_type(ticket_type_id: int, request: Request):
+    """API endpoint to fetch ticket type data for editing"""
+    # Check admin authentication using custom session system
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        ticket_type = get_ticket_type_by_id(ticket_type_id)
+        if not ticket_type:
+            raise HTTPException(status_code=404, detail="Ticket type not found")
+        
+        return JSONResponse(content=ticket_type)
+    except Exception as e:
+        logging.error(f"Error fetching ticket type {ticket_type_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/health")
 async def health_check():
