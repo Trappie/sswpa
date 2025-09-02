@@ -20,7 +20,8 @@ from .database import (
     ensure_complete_schema, get_recitals, get_recital_by_id, get_recital_by_slug,
     create_recital, update_recital, delete_recital,
     get_ticket_types_for_recital, get_ticket_type_by_id,
-    create_ticket_type, update_ticket_type, delete_ticket_type
+    create_ticket_type, update_ticket_type, delete_ticket_type,
+    create_order, update_order_payment_status, get_order_by_id
 )
 import time
 import secrets
@@ -189,11 +190,18 @@ async def support(request: Request):
 async def contact(request: Request):
     return templates.TemplateResponse("contact.html", {"request": request, "current_page": "contact"})
 
+class TicketItem(BaseModel):
+    ticket_type_id: int
+    quantity: int
+    price_per_ticket_cents: int
+
 class PaymentRequest(BaseModel):
     source_id: str
     amount: int
     currency: str = "USD"
     buyer_email: str
+    recital_id: int
+    ticket_items: list[TicketItem]
 
 def get_secret(secret_id: str):
     """Fetch secret from environment variable or Secret Manager"""
@@ -381,12 +389,48 @@ async def get_square_config():
 async def process_payment(payment_request: PaymentRequest):
     """Process payment using Square API"""
     try:
+        # Get recital details for order description
+        recital = get_recital_by_id(payment_request.recital_id)
+        if not recital:
+            return {"success": False, "message": "Recital not found"}
+        
+        # Create order in database first
+        order_items = [
+            {
+                'ticket_type_id': item.ticket_type_id,
+                'quantity': item.quantity,
+                'price_per_ticket_cents': item.price_per_ticket_cents
+            }
+            for item in payment_request.ticket_items
+        ]
+        
+        # Build order description for Square
+        item_descriptions = []
+        for item in payment_request.ticket_items:
+            ticket_type = get_ticket_type_by_id(item.ticket_type_id)
+            if ticket_type:
+                item_descriptions.append(f"{item.quantity}x {ticket_type['name']}")
+        
+        order_description = f"SSWPA: {', '.join(item_descriptions)} for {recital['artist_name']} on {recital['event_date']}"
+        
+        order_data = {
+            'recital_id': payment_request.recital_id,
+            'buyer_email': payment_request.buyer_email,
+            'total_amount_cents': payment_request.amount,
+            'payment_status': 'processing',
+            'notes': order_description
+        }
+        
+        order_id = create_order(order_data, order_items)
+        if not order_id:
+            return {"success": False, "message": "Failed to create order"}
+        
         client = get_square_client()
         
         # Create a unique idempotency key
         idempotency_key = str(uuid.uuid4())
         
-        # Process the payment using the correct API format (matching working example)
+        # Process the payment using Square API
         result = client.payments.create(
             source_id=payment_request.source_id,
             idempotency_key=idempotency_key,
@@ -394,26 +438,31 @@ async def process_payment(payment_request: PaymentRequest):
                 'amount': payment_request.amount,  # Amount in cents
                 'currency': payment_request.currency
             },
-            buyer_email_address=payment_request.buyer_email
-            # Note: location_id removed as it's not in the working example
+            buyer_email_address=payment_request.buyer_email,
+            # Note: Removed order_id since Square expects a Square Order object, not our DB order ID
+            note=order_description[:500]  # Square note field (limited length)
         )
         
         if result.errors:
-            # Handle errors
+            # Handle errors - update order status to failed
             logging.error(f"Payment failed: {result.errors}")
+            update_order_payment_status(order_id, 'failed')
             return {
                 "success": False,
                 "errors": [error.detail for error in result.errors],
-                "message": "Payment failed. Please try again."
+                "message": "Payment failed. Please try again.",
+                "order_id": order_id
             }
         else:
-            # Payment successful
+            # Payment successful - update order status
             payment = result.payment
             logging.info(f"Payment successful: {payment.id}")
+            update_order_payment_status(order_id, 'completed', payment.id)
             
             return {
                 "success": True,
                 "payment_id": payment.id,
+                "order_id": order_id,
                 "status": payment.status,
                 "amount": payment.amount_money.amount,
                 "receipt_url": payment.receipt_url,

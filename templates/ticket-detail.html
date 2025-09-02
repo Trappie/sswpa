@@ -10,6 +10,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+    <style>
+        /* Hide number input spinners */
+        .no-spinners::-webkit-outer-spin-button,
+        .no-spinners::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .no-spinners {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
 <body>
     {% include 'nav.html' %}
@@ -79,7 +91,7 @@
                                         <span class="price">${{ "%.2f"|format(ticket_type.price_cents / 100) }}</span>
                                         <div class="quantity-selector">
                                             <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', -1)">-</button>
-                                            <input type="number" id="ticket_{{ ticket_type.id }}-qty" value="0" min="0" max="{{ ticket_type.max_quantity or 10 }}" readonly>
+                                            <input type="number" id="ticket_{{ ticket_type.id }}-qty" value="0" min="0" max="{{ ticket_type.max_quantity or 10 }}" onchange="updateTotal()" class="no-spinners">
                                             <button type="button" class="qty-btn" onclick="updateQuantity('ticket_{{ ticket_type.id }}', 1)">+</button>
                                         </div>
                                     </div>
@@ -148,9 +160,20 @@
     <script src="/static/js/main.js"></script>
     <script>
         // Ticket quantity and pricing logic
+        const recitalId = {{ recital.id }};
         const prices = {
             {% for ticket_type in ticket_types %}
-            ticket_{{ ticket_type.id }}: {{ ticket_type.price_cents / 100 }},
+            ticket_{{ ticket_type.id }}: {{ ticket_type.price_cents / 100 }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+        
+        const ticketTypes = {
+            {% for ticket_type in ticket_types %}
+            ticket_{{ ticket_type.id }}: {
+                id: {{ ticket_type.id }},
+                name: {{ ticket_type.name|tojson }},
+                price_cents: {{ ticket_type.price_cents }}
+            }{% if not loop.last %},{% endif %}
             {% endfor %}
         };
         
@@ -159,8 +182,13 @@
 
         function updateQuantity(type, change) {
             const input = document.getElementById(type + '-qty');
+            if (!input) {
+                console.error('Input element not found for:', type + '-qty');
+                return;
+            }
             const currentValue = parseInt(input.value) || 0;
-            const newValue = Math.max(0, currentValue + change);
+            const maxValue = parseInt(input.getAttribute('max')) || 999;
+            const newValue = Math.max(0, Math.min(maxValue, currentValue + change));
             input.value = newValue;
             updateTotal();
         }
@@ -226,6 +254,21 @@
             document.getElementById('payment-status').style.display = 'none';
         }
 
+        function collectTicketItems() {
+            const items = [];
+            {% for ticket_type in ticket_types %}
+            const qty{{ ticket_type.id }} = parseInt(document.getElementById('ticket_{{ ticket_type.id }}-qty').value) || 0;
+            if (qty{{ ticket_type.id }} > 0) {
+                items.push({
+                    ticket_type_id: {{ ticket_type.id }},
+                    quantity: qty{{ ticket_type.id }},
+                    price_per_ticket_cents: {{ ticket_type.price_cents }}
+                });
+            }
+            {% endfor %}
+            return items;
+        }
+
         async function processPayment() {
             const emailInput = document.getElementById('buyer-email');
             const email = emailInput.value.trim();
@@ -257,7 +300,9 @@
                             source_id: result.token,
                             amount: Math.round(currentTotal * 100), // Convert to cents
                             currency: 'USD',
-                            buyer_email: email
+                            buyer_email: email,
+                            recital_id: recitalId,
+                            ticket_items: collectTicketItems()
                         })
                     });
                     

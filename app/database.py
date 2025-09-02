@@ -532,3 +532,98 @@ def delete_ticket_type(ticket_type_id: int) -> bool:
     except Exception as e:
         logging.error(f"Failed to delete ticket type: {e}")
         return False
+
+# Order management functions
+def create_order(order_data: dict, order_items: list) -> int:
+    """Create a new order with order items"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Create the order
+            cursor.execute("""
+                INSERT INTO orders (
+                    recital_id, buyer_email, buyer_name, phone,
+                    total_amount_cents, payment_status, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                order_data['recital_id'],
+                order_data['buyer_email'],
+                order_data.get('buyer_name', ''),
+                order_data.get('phone', ''),
+                order_data['total_amount_cents'],
+                order_data.get('payment_status', 'pending'),
+                order_data.get('notes', '')
+            ))
+            
+            order_id = cursor.lastrowid
+            
+            # Create order items
+            for item in order_items:
+                cursor.execute("""
+                    INSERT INTO order_items (
+                        order_id, ticket_type_id, quantity, price_per_ticket_cents
+                    ) VALUES (?, ?, ?, ?)
+                """, (
+                    order_id,
+                    item['ticket_type_id'],
+                    item['quantity'],
+                    item['price_per_ticket_cents']
+                ))
+            
+            conn.commit()
+            return order_id
+    except Exception as e:
+        logging.error(f"Failed to create order: {e}")
+        return None
+
+def update_order_payment_status(order_id: int, payment_status: str, square_payment_id: str = None) -> bool:
+    """Update order payment status and Square payment ID"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE orders 
+                SET payment_status = ?, square_payment_id = ?
+                WHERE id = ?
+            """, (payment_status, square_payment_id, order_id))
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.error(f"Failed to update order payment status: {e}")
+        return False
+
+def get_order_by_id(order_id: int) -> dict:
+    """Get order details including items"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get order details
+            cursor.execute("""
+                SELECT o.*, r.title as recital_title, r.artist_name, r.event_date
+                FROM orders o
+                JOIN recitals r ON o.recital_id = r.id
+                WHERE o.id = ?
+            """, (order_id,))
+            order = cursor.fetchone()
+            
+            if not order:
+                return None
+            
+            order_dict = dict(order)
+            
+            # Get order items
+            cursor.execute("""
+                SELECT oi.*, tt.name as ticket_name
+                FROM order_items oi
+                JOIN ticket_types tt ON oi.ticket_type_id = tt.id
+                WHERE oi.order_id = ?
+            """, (order_id,))
+            items = [dict(row) for row in cursor.fetchall()]
+            order_dict['items'] = items
+            
+            return order_dict
+    except Exception as e:
+        logging.error(f"Failed to get order: {e}")
+        return None

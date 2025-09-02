@@ -23,13 +23,24 @@ docker rm ${CONTAINER_NAME} 2>/dev/null || true
 echo "🔨 Building Docker image..."
 docker build -t ${IMAGE_NAME} .
 
-# Run the container with local volume mount
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    echo "📄 Loading environment variables from .env..."
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Run the container with local volume mount and environment variables
 echo "🚀 Starting container..."
 docker run -d \
   --name ${CONTAINER_NAME} \
   -p ${PORT}:8000 \
   -v $(pwd)/local-data:/data \
   -e ENVIRONMENT=local \
+  -e SQUARE_SANDBOX_ACCESS_TOKEN="${SQUARE_SANDBOX_ACCESS_TOKEN}" \
+  -e SQUARE_SANDBOX_APP_ID="${SQUARE_SANDBOX_APP_ID}" \
+  -e SQUARE_SANDBOX_LOCATION_ID="${SQUARE_SANDBOX_LOCATION_ID}" \
+  -e GMAIL_PASSWORD="${GMAIL_APP_PASSWORD}" \
+  -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
   --restart unless-stopped \
   ${IMAGE_NAME}
 

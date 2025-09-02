@@ -37,6 +37,12 @@ docker network create sswpa-local-net 2>/dev/null || true
 echo "🔨 Building Docker image..."
 docker build -t ${IMAGE_NAME} .
 
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    echo "📄 Loading environment variables from .env..."
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Run the app container
 echo "🚀 Starting app container..."
 docker run -d \
@@ -44,6 +50,11 @@ docker run -d \
   --network sswpa-local-net \
   -v $(pwd)/local-data:/data \
   -e ENVIRONMENT=local \
+  -e SQUARE_SANDBOX_ACCESS_TOKEN="${SQUARE_SANDBOX_ACCESS_TOKEN}" \
+  -e SQUARE_SANDBOX_APP_ID="${SQUARE_SANDBOX_APP_ID}" \
+  -e SQUARE_SANDBOX_LOCATION_ID="${SQUARE_SANDBOX_LOCATION_ID}" \
+  -e GMAIL_PASSWORD="${GMAIL_APP_PASSWORD}" \
+  -e ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
   --restart unless-stopped \
   ${IMAGE_NAME}
 
