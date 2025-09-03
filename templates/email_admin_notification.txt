@@ -1,0 +1,22 @@
+New ticket order received on SSWPA website:
+
+CUSTOMER DETAILS:
+• Email: {{ buyer_email }}
+• Name: {{ buyer_name if buyer_name else 'Not provided' }}
+
+ORDER DETAILS:
+• Order ID: #{{ order_id }}
+• Event: {{ recital_title }} - {{ artist_name }}
+• Date: {{ event_date }}
+
+TICKETS:
+{% for item in items %}• {{ item.quantity }}x {{ item.ticket_name }} @ ${{ "%.2f"|format(item.price_per_ticket_cents/100) }}
+{% endfor %}
+PAYMENT:
+• Total: ${{ "%.2f"|format(total_amount_cents/100) }}
+• Status: {{ payment_status }}
+• Square Payment ID: {{ square_payment_id }}
+• Order Date: {{ order_date }}
+
+---
+Sent automatically from SSWPA ticketing system

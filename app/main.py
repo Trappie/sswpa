@@ -315,44 +315,17 @@ def send_order_confirmation_email(order_data: dict):
         msg['To'] = customer_email
         msg['Subject'] = f"SSWPA Ticket Confirmation - {order_data['artist_name']} on {order_data['event_date']}"
         
-        # Create ticket summary
-        ticket_summary = []
-        for item in order_data['items']:
-            ticket_summary.append(f"• {item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f} each")
-        
-        # Email body
-        body = f"""
-Dear Customer,
-
-Thank you for your ticket purchase! Here are your order details:
-
-EVENT DETAILS:
-• {order_data['recital_title']} featuring {order_data['artist_name']}
-• Date: {order_data['event_date']}
-• Venue: Kresge Recital Hall, Carnegie Mellon University
-
-TICKETS PURCHASED:
-{chr(10).join(ticket_summary)}
-
-TOTAL: ${order_data['total_amount_cents']/100:.2f}
-
-PAYMENT CONFIRMATION:
-• Order ID: #{order_data['id']}
-• Payment ID: {order_data['square_payment_id']}
-
-IMPORTANT INFORMATION:
-• No physical tickets required - you're on our pre-paid list
-• Simply provide your name at the door for confirmation
-• Free admission for SSWPA Members and CMU students with ID
-• All recitals include a "Meet the Artist" reception after the performance
-
-If you have any questions, please contact us at marinaschmidt@comcast.net
-
-Thank you for supporting the Steinway Society of Western Pennsylvania!
-
-Best regards,
-SSWPA Team
-        """
+        # Load and render email template
+        template = templates.get_template("email_customer_confirmation.txt")
+        body = template.render(
+            recital_title=order_data['recital_title'],
+            artist_name=order_data['artist_name'],
+            event_date=order_data['event_date'],
+            items=order_data['items'],
+            total_amount_cents=order_data['total_amount_cents'],
+            order_id=order_data['id'],
+            square_payment_id=order_data['square_payment_id']
+        )
         
         msg.attach(MIMEText(body, 'plain'))
         
@@ -385,36 +358,21 @@ def send_order_notification_email(order_data: dict):
         msg['To'] = ", ".join(recipient_emails)
         msg['Subject'] = f"SSWPA New Ticket Order - {order_data['artist_name']} (${order_data['total_amount_cents']/100:.2f})"
         
-        # Create ticket summary
-        ticket_summary = []
-        for item in order_data['items']:
-            ticket_summary.append(f"• {item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f}")
-        
-        # Email body
-        body = f"""
-New ticket order received on SSWPA website:
-
-CUSTOMER DETAILS:
-• Email: {order_data['buyer_email']}
-• Name: {order_data.get('buyer_name', 'Not provided')}
-
-ORDER DETAILS:
-• Order ID: #{order_data['id']}
-• Event: {order_data['recital_title']} - {order_data['artist_name']}
-• Date: {order_data['event_date']}
-
-TICKETS:
-{chr(10).join(ticket_summary)}
-
-PAYMENT:
-• Total: ${order_data['total_amount_cents']/100:.2f}
-• Status: {order_data['payment_status']}
-• Square Payment ID: {order_data['square_payment_id']}
-• Order Date: {order_data['order_date']}
-
----
-Sent automatically from SSWPA ticketing system
-        """
+        # Load and render email template
+        template = templates.get_template("email_admin_notification.txt")
+        body = template.render(
+            buyer_email=order_data['buyer_email'],
+            buyer_name=order_data.get('buyer_name'),
+            order_id=order_data['id'],
+            recital_title=order_data['recital_title'],
+            artist_name=order_data['artist_name'],
+            event_date=order_data['event_date'],
+            items=order_data['items'],
+            total_amount_cents=order_data['total_amount_cents'],
+            payment_status=order_data['payment_status'],
+            square_payment_id=order_data['square_payment_id'],
+            order_date=order_data['order_date']
+        )
         
         msg.attach(MIMEText(body, 'plain'))
         
@@ -977,3 +935,56 @@ async def get_ticket_type(ticket_type_id: int, request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.post("/api/resend-order-emails")
+async def resend_order_emails(request: Request):
+    """Resend confirmation and notification emails for a specific order"""
+    try:
+        # Parse JSON body
+        body = await request.json()
+        order_id = body.get("order_id")
+        
+        if not order_id:
+            return {"success": False, "message": "Order ID is required"}
+        
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order {order_id} not found"}
+        
+        # Attempt to send both emails
+        confirmation_sent = send_order_confirmation_email(order_data)
+        notification_sent = send_order_notification_email(order_data)
+        
+        if confirmation_sent and notification_sent:
+            return {
+                "success": True, 
+                "message": f"Both emails sent successfully for Order #{order_id}",
+                "confirmation_sent": True,
+                "notification_sent": True
+            }
+        elif confirmation_sent:
+            return {
+                "success": True, 
+                "message": f"Customer confirmation sent, but admin notification failed for Order #{order_id}",
+                "confirmation_sent": True,
+                "notification_sent": False
+            }
+        elif notification_sent:
+            return {
+                "success": True, 
+                "message": f"Admin notification sent, but customer confirmation failed for Order #{order_id}",
+                "confirmation_sent": False,
+                "notification_sent": True
+            }
+        else:
+            return {
+                "success": False, 
+                "message": f"Failed to send both emails for Order #{order_id}",
+                "confirmation_sent": False,
+                "notification_sent": False
+            }
+            
+    except Exception as e:
+        logging.error(f"Error resending emails: {e}")
+        return {"success": False, "message": f"Server error: {str(e)}"}

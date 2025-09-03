@@ -1,0 +1,27 @@
+Dear Customer,
+
+Thank you for your ticket purchase! Here are your order details:
+
+EVENT DETAILS:
+• {{ recital_title }} featuring {{ artist_name }}
+• Date: {{ event_date }}
+• Venue: Kresge Recital Hall, Carnegie Mellon University
+
+TICKETS PURCHASED:
+{% for item in items %}• {{ item.quantity }}x {{ item.ticket_name }} @ ${{ "%.2f"|format(item.price_per_ticket_cents/100) }}
+{% endfor %}
+TOTAL: ${{ "%.2f"|format(total_amount_cents/100) }}
+
+PAYMENT CONFIRMATION:
+• Order ID: #{{ order_id }}
+• Payment ID: {{ square_payment_id }}
+
+Please save this email for your records. We look forward to seeing you at the recital!
+
+If you have any questions about your order, please contact us at wu.di.network@gmail.com.
+
+Best regards,
+The Steinway Society of Western Pennsylvania
+
+---
+This email was sent automatically from the SSWPA ticketing system.

@@ -487,6 +487,29 @@
                     {% endif %}
                 </div>
                 {% endif %}
+                
+                <!-- Email Resend Section -->
+                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+                    <h4>Resend Order Emails</h4>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+                        <i class="fas fa-envelope"></i> Resend confirmation and notification emails for a specific order
+                    </p>
+                    
+                    <form id="resendEmailForm" style="display: flex; gap: 10px; align-items: end;">
+                        <div style="flex: 1;">
+                            <label for="orderId" style="display: block; margin-bottom: 5px; font-weight: bold;">Order ID:</label>
+                            <input type="number" id="orderId" name="orderId" placeholder="Enter order ID (e.g., 123)" 
+                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+                        </div>
+                        <div>
+                            <button type="button" onclick="resendEmails()" class="btn" style="width: auto;">
+                                <i class="fas fa-paper-plane"></i> Resend Emails
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="resendResult" style="margin-top: 15px; display: none;"></div>
+                </div>
             </div>
             
             <div class="tab-content" id="edit_items">
@@ -992,6 +1015,64 @@
                 form.submit();
             }
         }
+        
+        async function resendEmails() {
+            const orderIdInput = document.getElementById('orderId');
+            const resultDiv = document.getElementById('resendResult');
+            const button = document.querySelector('#resendEmailForm button');
+            
+            const orderId = orderIdInput.value.trim();
+            if (!orderId) {
+                resultDiv.innerHTML = '<div style="color: red; padding: 10px; background: #fee; border-radius: 4px;">Please enter an order ID</div>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            // Show loading state
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            resultDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/resend-order-emails', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ order_id: parseInt(orderId) })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `<div style="color: green; padding: 10px; background: #efe; border-radius: 4px;">
+                        <i class="fas fa-check-circle"></i> ${result.message}
+                    </div>`;
+                    orderIdInput.value = ''; // Clear the input on success
+                } else {
+                    resultDiv.innerHTML = `<div style="color: red; padding: 10px; background: #fee; border-radius: 4px;">
+                        <i class="fas fa-exclamation-circle"></i> ${result.message}
+                    </div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: red; padding: 10px; background: #fee; border-radius: 4px;">
+                    <i class="fas fa-exclamation-triangle"></i> Error: ${error.message}
+                </div>`;
+            } finally {
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-paper-plane"></i> Resend Emails';
+                resultDiv.style.display = 'block';
+            }
+        }
+        
+        // Allow form submission with Enter key
+        document.getElementById('orderId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                resendEmails();
+            }
+        });
     </script>
 </body>
 </html>
