@@ -254,7 +254,7 @@ def send_contact_email(form_data: dict):
         smtp_port = 587
         sender_email = "wu.di.network@gmail.com"
         sender_password = gmail_password
-        recipient_emails = ["marinaschmidt@comcast.net", "wu.di.network@gmail.com"]  # Send to both Marina and Di
+        recipient_emails = ["wu.di.network@gmail.com"]  # Send to Di only
         
         # Create message
         msg = MIMEMultipart()
@@ -295,6 +295,138 @@ Sent from SSWPA website contact form
         
     except Exception as e:
         logging.error(f"Failed to send contact email: {e}")
+        return False
+
+def send_order_confirmation_email(order_data: dict):
+    """Send order confirmation email to customer"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        customer_email = order_data['buyer_email']
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = customer_email
+        msg['Subject'] = f"SSWPA Ticket Confirmation - {order_data['artist_name']} on {order_data['event_date']}"
+        
+        # Create ticket summary
+        ticket_summary = []
+        for item in order_data['items']:
+            ticket_summary.append(f"• {item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f} each")
+        
+        # Email body
+        body = f"""
+Dear Customer,
+
+Thank you for your ticket purchase! Here are your order details:
+
+EVENT DETAILS:
+• {order_data['recital_title']} featuring {order_data['artist_name']}
+• Date: {order_data['event_date']}
+• Venue: Kresge Recital Hall, Carnegie Mellon University
+
+TICKETS PURCHASED:
+{chr(10).join(ticket_summary)}
+
+TOTAL: ${order_data['total_amount_cents']/100:.2f}
+
+PAYMENT CONFIRMATION:
+• Order ID: #{order_data['id']}
+• Payment ID: {order_data['square_payment_id']}
+
+IMPORTANT INFORMATION:
+• No physical tickets required - you're on our pre-paid list
+• Simply provide your name at the door for confirmation
+• Free admission for SSWPA Members and CMU students with ID
+• All recitals include a "Meet the Artist" reception after the performance
+
+If you have any questions, please contact us at marinaschmidt@comcast.net
+
+Thank you for supporting the Steinway Society of Western Pennsylvania!
+
+Best regards,
+SSWPA Team
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send order confirmation email: {e}")
+        return False
+
+def send_order_notification_email(order_data: dict):
+    """Send order notification email to webmaster/admin"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        recipient_emails = ["wu.di.network@gmail.com"]  # Admin email
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = ", ".join(recipient_emails)
+        msg['Subject'] = f"SSWPA New Ticket Order - {order_data['artist_name']} (${order_data['total_amount_cents']/100:.2f})"
+        
+        # Create ticket summary
+        ticket_summary = []
+        for item in order_data['items']:
+            ticket_summary.append(f"• {item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f}")
+        
+        # Email body
+        body = f"""
+New ticket order received on SSWPA website:
+
+CUSTOMER DETAILS:
+• Email: {order_data['buyer_email']}
+• Name: {order_data.get('buyer_name', 'Not provided')}
+
+ORDER DETAILS:
+• Order ID: #{order_data['id']}
+• Event: {order_data['recital_title']} - {order_data['artist_name']}
+• Date: {order_data['event_date']}
+
+TICKETS:
+{chr(10).join(ticket_summary)}
+
+PAYMENT:
+• Total: ${order_data['total_amount_cents']/100:.2f}
+• Status: {order_data['payment_status']}
+• Square Payment ID: {order_data['square_payment_id']}
+• Order Date: {order_data['order_date']}
+
+---
+Sent automatically from SSWPA ticketing system
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email to all recipients
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send order notification email: {e}")
         return False
 
 @app.post("/contact")
@@ -458,6 +590,22 @@ async def process_payment(payment_request: PaymentRequest):
             payment = result.payment
             logging.info(f"Payment successful: {payment.id}")
             update_order_payment_status(order_id, 'completed', payment.id)
+            
+            # Send email notifications
+            try:
+                # Get complete order details for email
+                complete_order = get_order_by_id(order_id)
+                if complete_order:
+                    # Send confirmation email to customer
+                    send_order_confirmation_email(complete_order)
+                    logging.info(f"Order confirmation email sent to {payment_request.buyer_email}")
+                    
+                    # Send notification email to admin/webmaster
+                    send_order_notification_email(complete_order)
+                    logging.info(f"Order notification email sent to administrators")
+            except Exception as email_error:
+                # Don't fail the payment if email fails
+                logging.error(f"Failed to send order emails: {email_error}")
             
             return {
                 "success": True,
