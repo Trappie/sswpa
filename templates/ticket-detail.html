@@ -21,6 +21,23 @@
         .no-spinners {
             -moz-appearance: textfield;
         }
+        
+        /* Form validation styles */
+        .form-group input.invalid {
+            border: 2px solid #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        .form-group input.valid {
+            border: 2px solid #28a745;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -117,8 +134,21 @@
                             <h4>Checkout</h4>
                             
                             <div class="form-group">
+                                <label for="buyer-first-name">First Name *</label>
+                                <input type="text" id="buyer-first-name" required>
+                                <div class="error-message" id="first-name-error">First name is required</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="buyer-last-name">Last Name *</label>
+                                <input type="text" id="buyer-last-name" required>
+                                <div class="error-message" id="last-name-error">Last name is required</div>
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="buyer-email">Email Address *</label>
                                 <input type="email" id="buyer-email" required>
+                                <div class="error-message" id="email-error">Please enter a valid email address</div>
                             </div>
                             
                             <div class="payment-form">
@@ -143,9 +173,8 @@
                         <div class="important-notes">
                             <h4>Important Information</h4>
                             <ul>
-                                <li><strong>No Physical Tickets Required</strong> - Your purchase adds you to our pre-paid ticket list</li>
+                                <li><strong>Email Confirmation Required</strong> - Present your email confirmation at the door for entry</li>
                                 <li><strong>Free for SSWPA Members</strong> - Members and CMU students with ID get free admission</li>
-                                <li><strong>Box Office Check-in</strong> - Simply provide your name at the door for confirmation</li>
                                 <li><strong>Meet the Artist</strong> - Reception included after every performance</li>
                             </ul>
                         </div>
@@ -269,14 +298,57 @@
             return items;
         }
 
-        async function processPayment() {
-            const emailInput = document.getElementById('buyer-email');
-            const email = emailInput.value.trim();
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function validateField(input, errorElement, validator = null) {
+            const value = input.value.trim();
+            const isValid = validator ? validator(value) : value !== '';
             
-            if (!email) {
-                alert('Please enter your email address.');
-                return;
+            if (isValid) {
+                input.classList.remove('invalid');
+                input.classList.add('valid');
+                errorElement.style.display = 'none';
+            } else {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                errorElement.style.display = 'block';
             }
+            
+            return isValid;
+        }
+
+        function validateForm() {
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstNameError = document.getElementById('first-name-error');
+            const lastNameError = document.getElementById('last-name-error');
+            const emailError = document.getElementById('email-error');
+            
+            const isFirstNameValid = validateField(firstNameInput, firstNameError);
+            const isLastNameValid = validateField(lastNameInput, lastNameError);
+            const isEmailValid = validateField(emailInput, emailError, validateEmail);
+            
+            return isFirstNameValid && isLastNameValid && isEmailValid;
+        }
+
+        async function processPayment() {
+            // Validate all form fields
+            if (!validateForm()) {
+                return; // Stop if validation fails
+            }
+            
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            const email = emailInput.value.trim();
             
             const statusDiv = document.getElementById('payment-status');
             statusDiv.innerHTML = '<div class="alert alert-info">Processing payment...</div>';
@@ -301,6 +373,8 @@
                             amount: Math.round(currentTotal * 100), // Convert to cents
                             currency: 'USD',
                             buyer_email: email,
+                            buyer_first_name: firstName,
+                            buyer_last_name: lastName,
                             recital_id: recitalId,
                             ticket_items: collectTicketItems()
                         })
@@ -322,6 +396,46 @@
                 statusDiv.innerHTML = '<div class="alert alert-error">Payment failed. Please try again.</div>';
             }
         }
+
+        // Add real-time validation event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstNameError = document.getElementById('first-name-error');
+            const lastNameError = document.getElementById('last-name-error');
+            const emailError = document.getElementById('email-error');
+            
+            // Add blur event listeners for validation
+            firstNameInput.addEventListener('blur', function() {
+                validateField(this, firstNameError);
+            });
+            
+            lastNameInput.addEventListener('blur', function() {
+                validateField(this, lastNameError);
+            });
+            
+            emailInput.addEventListener('blur', function() {
+                validateField(this, emailError, validateEmail);
+            });
+            
+            // Clear validation styles when user starts typing
+            firstNameInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                firstNameError.style.display = 'none';
+            });
+            
+            lastNameInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                lastNameError.style.display = 'none';
+            });
+            
+            emailInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                emailError.style.display = 'none';
+            });
+        });
 
         // Initialize
         updateTotal();

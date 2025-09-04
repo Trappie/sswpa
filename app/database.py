@@ -601,7 +601,7 @@ def get_order_by_id(order_id: int) -> dict:
             
             # Get order details
             cursor.execute("""
-                SELECT o.*, r.title as recital_title, r.artist_name, r.event_date
+                SELECT o.*, r.title as recital_title, r.artist_name, r.event_date, r.event_time
                 FROM orders o
                 JOIN recitals r ON o.recital_id = r.id
                 WHERE o.id = ?

@@ -3,8 +3,8 @@ Dear Customer,
 Thank you for your ticket purchase! Here are your order details:
 
 EVENT DETAILS:
-• {{ recital_title }} featuring {{ artist_name }}
-• Date: {{ event_date }}
+• {{ recital_title }}
+• Date: {{ event_date }}{% if event_time %} at {{ event_time }}{% endif %}
 • Venue: Kresge Recital Hall, Carnegie Mellon University
 
 TICKETS PURCHASED:
@@ -16,9 +16,13 @@ PAYMENT CONFIRMATION:
 • Order ID: #{{ order_id }}
 • Payment ID: {{ square_payment_id }}
 
+IMPORTANT INFORMATION:
+• Present this email confirmation at the door for entry
+• All recitals include a "Meet the Artist" reception after the performance
+
 Please save this email for your records. We look forward to seeing you at the recital!
 
-If you have any questions about your order, please contact us at wu.di.network@gmail.com.
+If you have any questions about your order, please contact us at marinaschmidt@comcast.net.
 
 Best regards,
 The Steinway Society of Western Pennsylvania

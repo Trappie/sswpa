@@ -200,6 +200,8 @@ class PaymentRequest(BaseModel):
     amount: int
     currency: str = "USD"
     buyer_email: str
+    buyer_first_name: str
+    buyer_last_name: str
     recital_id: int
     ticket_items: list[TicketItem]
 
@@ -321,6 +323,7 @@ def send_order_confirmation_email(order_data: dict):
             recital_title=order_data['recital_title'],
             artist_name=order_data['artist_name'],
             event_date=order_data['event_date'],
+            event_time=order_data.get('event_time'),
             items=order_data['items'],
             total_amount_cents=order_data['total_amount_cents'],
             order_id=order_data['id'],
@@ -506,6 +509,7 @@ async def process_payment(payment_request: PaymentRequest):
         order_data = {
             'recital_id': payment_request.recital_id,
             'buyer_email': payment_request.buyer_email,
+            'buyer_name': f"{payment_request.buyer_first_name} {payment_request.buyer_last_name}".strip(),
             'total_amount_cents': payment_request.amount,
             'payment_status': 'processing',
             'notes': order_description
