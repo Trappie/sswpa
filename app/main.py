@@ -320,6 +320,7 @@ def send_order_confirmation_email(order_data: dict):
         # Load and render email template
         template = templates.get_template("email_customer_confirmation.txt")
         body = template.render(
+            buyer_name=order_data.get('buyer_name', 'Customer'),
             recital_title=order_data['recital_title'],
             artist_name=order_data['artist_name'],
             event_date=order_data['event_date'],
@@ -578,13 +579,23 @@ async def process_payment(payment_request: PaymentRequest):
                 "receipt_url": payment.receipt_url,
                 "message": "Payment processed successfully!"
             }
-            
+                
     except Exception as e:
         logging.error(f"Payment processing error: {e}")
-        return {
-            "success": False,
-            "message": "An error occurred while processing your payment."
-        }
+        
+        # If we created an order but had an error, mark it as failed and allow retry
+        if 'order_id' in locals() and order_id:
+            update_order_payment_status(order_id, 'failed')
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment.",
+                "order_id": order_id
+            }
+        else:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment."
+            }
 
 @app.post("/test-db-write")
 async def test_db_write(message: str = "Test message"):
@@ -992,3 +1003,111 @@ async def resend_order_emails(request: Request):
     except Exception as e:
         logging.error(f"Error resending emails: {e}")
         return {"success": False, "message": f"Server error: {str(e)}"}
+
+@app.post("/api/retry-payment")
+async def retry_payment(request: Request):
+    """Retry payment for an existing order"""
+    try:
+        # Parse JSON body
+        body = await request.json()
+        order_id = body.get("order_id")
+        source_id = body.get("source_id")
+        
+        if not order_id or not source_id:
+            return {"success": False, "message": "Order ID and source ID are required"}
+        
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order {order_id} not found"}
+        
+        # Check if order is in a retry-able state
+        if order_data['payment_status'] not in ['failed', 'processing']:
+            return {"success": False, "message": "Order payment cannot be retried"}
+        
+        # Get Square client
+        client = get_square_client()
+        
+        # Create a unique idempotency key for the retry
+        idempotency_key = str(uuid.uuid4())
+        
+        # Build order description for Square
+        order_description = f"SSWPA Retry: Order #{order_id} - {order_data['recital_title']}"
+        
+        # Process the payment using Square API
+        result = client.payments.create(
+            source_id=source_id,
+            idempotency_key=idempotency_key,
+            amount_money={
+                'amount': order_data['total_amount_cents'],
+                'currency': 'USD'
+            },
+            buyer_email_address=order_data['buyer_email'],
+            note=order_description[:500]
+        )
+        
+        # Check if payment failed (can have errors or failed status)
+        payment = None
+        try:
+            payment = result.payment if hasattr(result, 'payment') else None
+        except:
+            # In case of any issues accessing payment object
+            pass
+        
+        # Check for errors or failed payment status
+        has_errors = result.errors and len(result.errors) > 0
+        payment_failed = payment and hasattr(payment, 'status') and payment.status == 'FAILED'
+        
+        if has_errors or payment_failed:
+            # Handle errors - update order status to failed
+            error_details = []
+            if has_errors:
+                error_details = [error.detail for error in result.errors]
+            else:
+                error_details = ["Payment failed"]
+                
+            logging.error(f"Payment retry failed: {error_details}")
+            update_order_payment_status(order_id, 'failed')
+            return {
+                "success": False,
+                "errors": error_details,
+                "message": "Payment retry failed. Please try again.",
+                "order_id": order_id
+            }
+        
+        # Payment successful - update order status
+        if not payment:
+            raise Exception("Payment object not found in successful response")
+        payment_id = payment.id
+        
+        update_order_payment_status(order_id, 'completed', payment_id)
+        
+        # Get updated order data for emails
+        updated_order_data = get_order_by_id(order_id)
+        
+        # Send confirmation and notification emails
+        send_order_confirmation_email(updated_order_data)
+        send_order_notification_email(updated_order_data)
+        
+        return {
+            "success": True,
+            "message": "Payment completed successfully!",
+            "payment_id": payment_id,
+            "order_id": order_id
+        }
+            
+    except Exception as e:
+        logging.error(f"Error retrying payment: {e}")
+        
+        # If we have an order_id, allow retry even on unexpected errors
+        if 'order_id' in locals() and order_id:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment. Please try again.",
+                "order_id": order_id
+            }
+        else:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment."
+            }

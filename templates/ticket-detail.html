@@ -38,6 +38,49 @@
             margin-top: 5px;
             display: none;
         }
+        
+        /* Disabled button styles */
+        .btn:disabled {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #fff;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        
+        .btn:disabled:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            transform: none;
+        }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #666;
+            font-size: 16px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -161,6 +204,11 @@
                                 <button id="cancel-button" class="btn btn-outline-light" onclick="cancelCheckout()">
                                     Cancel
                                 </button>
+                                
+                                <div id="payment-loading" class="loading-spinner">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Processing your payment...</div>
+                                </div>
                             </div>
                             
                             <div id="payment-status" style="display: none;"></div>
@@ -240,6 +288,13 @@
             
             const addToCartBtn = document.getElementById('add-to-cart');
             addToCartBtn.disabled = totalTickets === 0;
+            
+            // Update button text based on state
+            if (totalTickets === 0) {
+                addToCartBtn.textContent = 'Select Tickets to Continue';
+            } else {
+                addToCartBtn.textContent = 'Purchase Tickets';
+            }
         }
 
         async function initializeSquare() {
@@ -350,13 +405,33 @@
             const lastName = lastNameInput.value.trim();
             const email = emailInput.value.trim();
             
+            // Show loading spinner and hide buttons
+            const payButton = document.getElementById('pay-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const loadingSpinner = document.getElementById('payment-loading');
             const statusDiv = document.getElementById('payment-status');
-            statusDiv.innerHTML = '<div class="alert alert-info">Processing payment...</div>';
-            statusDiv.style.display = 'block';
+            
+            payButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            statusDiv.style.display = 'none';
+            
+            // Helper function to show results
+            function showPaymentResult(html, isSuccess = false, hasRetryButton = false) {
+                loadingSpinner.style.display = 'none';
+                statusDiv.innerHTML = html;
+                statusDiv.style.display = 'block';
+                
+                if (!isSuccess && !hasRetryButton) {
+                    // Show original buttons again only if there's no retry button
+                    payButton.style.display = 'inline-block';
+                    cancelButton.style.display = 'inline-block';
+                }
+            }
             
             try {
                 if (!card) {
-                    statusDiv.innerHTML = '<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>';
+                    showPaymentResult('<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>');
                     return;
                 }
                 
@@ -383,17 +458,95 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        statusDiv.innerHTML = '<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>';
-                        document.getElementById('pay-button').style.display = 'none';
+                        showPaymentResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
                     } else {
-                        statusDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
+                        // Check if this was a Square processing failure (has order_id)
+                        if (data.order_id) {
+                            showPaymentResult(`
+                                <div class="alert alert-error">
+                                    ${data.message}
+                                    <div style="margin-top: 10px;">
+                                        <button onclick="retryPayment(${data.order_id})" class="btn btn-primary-light" style="font-size: 14px; padding: 8px 16px;">
+                                            Retry Payment
+                                        </button>
+                                    </div>
+                                </div>
+                            `, false, true);
+                        } else {
+                            showPaymentResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
                     }
                 } else {
-                    statusDiv.innerHTML = '<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>';
+                    showPaymentResult('<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>');
                 }
             } catch (error) {
                 console.error('Payment error:', error);
-                statusDiv.innerHTML = '<div class="alert alert-error">Payment failed. Please try again.</div>';
+                showPaymentResult('<div class="alert alert-error">Payment failed. Please try again.</div>');
+            }
+        }
+
+        async function retryPayment(orderId) {
+            // Show loading state
+            const statusDiv = document.getElementById('payment-status');
+            const loadingSpinner = document.getElementById('payment-loading');
+            
+            statusDiv.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            
+            // Helper function to show retry results
+            function showRetryResult(html, isSuccess = false) {
+                loadingSpinner.style.display = 'none';
+                statusDiv.innerHTML = html;
+                statusDiv.style.display = 'block';
+            }
+            
+            try {
+                if (!card) {
+                    showRetryResult('<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>');
+                    return;
+                }
+                
+                const result = await card.tokenize();
+                
+                if (result.status === 'OK') {
+                    const response = await fetch('/api/retry-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            source_id: result.token
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showRetryResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
+                    } else {
+                        // If retry fails, show another retry option
+                        if (data.order_id) {
+                            showRetryResult(`
+                                <div class="alert alert-error">
+                                    ${data.message}
+                                    <div style="margin-top: 10px;">
+                                        <button onclick="retryPayment(${data.order_id})" class="btn btn-primary-light" style="font-size: 14px; padding: 8px 16px;">
+                                            Retry Payment Again
+                                        </button>
+                                    </div>
+                                </div>
+                            `);
+                        } else {
+                            showRetryResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
+                    }
+                } else {
+                    showRetryResult('<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>');
+                }
+            } catch (error) {
+                console.error('Retry payment error:', error);
+                showRetryResult('<div class="alert alert-error">Payment retry failed. Please try again.</div>');
             }
         }
 

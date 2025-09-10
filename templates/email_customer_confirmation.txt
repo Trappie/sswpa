@@ -1,4 +1,4 @@
-Dear Customer,
+Dear {{ buyer_name }},
 
 Thank you for your ticket purchase! Here are your order details:
 
