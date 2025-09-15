@@ -460,8 +460,12 @@
                     if (data.success) {
                         showPaymentResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
                     } else {
+                        // Check if this was rate limited
+                        if (data.rate_limited) {
+                            showPaymentResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
                         // Check if this was a Square processing failure (has order_id)
-                        if (data.order_id) {
+                        else if (data.order_id) {
                             showPaymentResult(`
                                 <div class="alert alert-error">
                                     ${data.message}
@@ -525,8 +529,12 @@
                     if (data.success) {
                         showRetryResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
                     } else {
+                        // Check if retry was rate limited
+                        if (data.rate_limited) {
+                            showRetryResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
                         // If retry fails, show another retry option
-                        if (data.order_id) {
+                        else if (data.order_id) {
                             showRetryResult(`
                                 <div class="alert alert-error">
                                     ${data.message}

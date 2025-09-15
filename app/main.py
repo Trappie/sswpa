@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form, File, UploadFile, Cookie, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -27,11 +28,175 @@ import time
 import secrets
 import shutil
 from pathlib import Path
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
 
 # Load environment variables from .env file for local development
 load_dotenv()
 
 app = FastAPI(title="Steinway Society of Western Pennsylvania")
+
+# Rate limiting storage (in-memory)
+payment_attempts = defaultdict(deque)  # IP -> deque of attempt timestamps
+global_payment_attempts = deque()  # Global timeline of all attempts for anomaly detection
+last_alert_time = None  # Track when we last sent an alert to avoid spam
+RATE_LIMITS = {
+    'per_5_minutes': {'limit': 5, 'window': timedelta(minutes=5)},
+    'per_hour': {'limit': 15, 'window': timedelta(hours=1)},
+    'per_day': {'limit': 50, 'window': timedelta(days=1)}
+}
+
+# Anomaly detection settings
+ANOMALY_THRESHOLD = 60  # attempts
+ANOMALY_WINDOW = timedelta(seconds=60)  # within 60 seconds
+ALERT_COOLDOWN = timedelta(minutes=15)  # don't send alerts more than once per 15 minutes
+
+def cleanup_old_attempts(ip: str):
+    """Remove attempts older than the longest window (1 day)"""
+    now = datetime.now()
+    cutoff = now - timedelta(days=1)
+    
+    # Remove old attempts
+    while payment_attempts[ip] and payment_attempts[ip][0] < cutoff:
+        payment_attempts[ip].popleft()
+
+def check_rate_limit(ip: str) -> tuple[bool, str]:
+    """Check if IP is within rate limits. Returns (allowed, error_message)"""
+    now = datetime.now()
+    cleanup_old_attempts(ip)
+    
+    # Check each rate limit
+    for limit_name, config in RATE_LIMITS.items():
+        cutoff = now - config['window']
+        # Count attempts within this window
+        recent_attempts = sum(1 for attempt_time in payment_attempts[ip] if attempt_time > cutoff)
+        
+        if recent_attempts >= config['limit']:
+            if limit_name == 'per_5_minutes':
+                return False, "Too many payment attempts. Please wait 5 minutes before trying again."
+            elif limit_name == 'per_hour':
+                return False, "Too many payment attempts. Please wait before trying again."
+            else:  # per_day
+                return False, "Daily payment limit reached. Please try again tomorrow."
+    
+    return True, ""
+
+def cleanup_global_attempts():
+    """Remove global attempts older than the anomaly window"""
+    now = datetime.now()
+    cutoff = now - ANOMALY_WINDOW
+    
+    while global_payment_attempts and global_payment_attempts[0]['timestamp'] < cutoff:
+        global_payment_attempts.popleft()
+
+def check_for_anomaly():
+    """Check if we're seeing anomalous payment activity and send alert if needed"""
+    global last_alert_time
+    
+    now = datetime.now()
+    cleanup_global_attempts()
+    
+    # Count recent attempts
+    recent_count = len(global_payment_attempts)
+    
+    # Check if we've exceeded the threshold
+    if recent_count >= ANOMALY_THRESHOLD:
+        # Check if we're not in cooldown period
+        if last_alert_time is None or (now - last_alert_time) > ALERT_COOLDOWN:
+            send_security_alert(recent_count, now)
+            last_alert_time = now
+            logging.warning(f"Security alert sent: {recent_count} payment attempts in {ANOMALY_WINDOW.total_seconds()} seconds")
+
+def send_security_alert(attempt_count: int, detection_time: datetime):
+    """Send security alert email about suspicious payment activity"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        recipient_email = "wu.di.network@gmail.com"
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = f"🚨 SSWPA Security Alert: {attempt_count} Payment Attempts Detected"
+        
+        # Get unique IPs from recent attempts
+        unique_ips = set()
+        for attempt in global_payment_attempts:
+            unique_ips.add(attempt['ip'])
+        
+        # Email body
+        body = f"""
+SECURITY ALERT: Suspicious Payment Activity Detected
+
+TIME: {detection_time.strftime('%Y-%m-%d %H:%M:%S')}
+ATTEMPTS: {attempt_count} payment attempts in 60 seconds
+UNIQUE IPs: {len(unique_ips)} different IP addresses
+
+This exceeds the normal threshold of {ANOMALY_THRESHOLD} attempts per minute.
+This could indicate:
+- Brute force attack on payment system
+- Automated bot testing stolen cards
+- DDoS attempt on payment endpoints
+
+IP ADDRESSES INVOLVED:
+{chr(10).join(f'• {ip}' for ip in sorted(unique_ips))}
+
+RECOMMENDATION:
+- Monitor server logs for continued suspicious activity
+- Consider implementing additional security measures if attacks persist
+- Check Cloudflare/firewall logs for blocked requests
+
+This alert will not repeat for 15 minutes to prevent spam.
+
+---
+Automated Security Alert from SSWPA Payment System
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        logging.info(f"Security alert email sent successfully")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Failed to send security alert email: {e}")
+        return False
+
+def record_payment_attempt(ip: str):
+    """Record a payment attempt for the given IP and global tracking"""
+    now = datetime.now()
+    
+    # Record for IP-specific rate limiting
+    payment_attempts[ip].append(now)
+    
+    # Record for global anomaly detection
+    global_payment_attempts.append({
+        'timestamp': now,
+        'ip': ip
+    })
+    
+    # Check for anomalous activity
+    check_for_anomaly()
+
+# Enable CORS for development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Simple session storage (in production, use Redis or database)
 admin_sessions = {}
@@ -480,9 +645,23 @@ async def get_square_config():
         return {"error": "Failed to load payment configuration"}
 
 @app.post("/process-payment")
-async def process_payment(payment_request: PaymentRequest):
+async def process_payment(payment_request: PaymentRequest, request: Request):
     """Process payment using Square API"""
     try:
+        # Get client IP for rate limiting
+        client_ip = request.client.host
+        
+        # Check rate limits
+        allowed, error_message = check_rate_limit(client_ip)
+        if not allowed:
+            return {
+                "success": False,
+                "message": error_message,
+                "rate_limited": True
+            }
+        
+        # Record this payment attempt
+        record_payment_attempt(client_ip)
         # Get recital details for order description
         recital = get_recital_by_id(payment_request.recital_id)
         if not recital:
@@ -1008,10 +1187,25 @@ async def resend_order_emails(request: Request):
 async def retry_payment(request: Request):
     """Retry payment for an existing order"""
     try:
+        # Get client IP for rate limiting
+        client_ip = request.client.host
+        
+        # Check rate limits
+        allowed, error_message = check_rate_limit(client_ip)
+        if not allowed:
+            return {
+                "success": False,
+                "message": error_message,
+                "rate_limited": True
+            }
+        
         # Parse JSON body
         body = await request.json()
         order_id = body.get("order_id")
         source_id = body.get("source_id")
+        
+        # Record this payment attempt
+        record_payment_attempt(client_ip)
         
         if not order_id or not source_id:
             return {"success": False, "message": "Order ID and source ID are required"}
