@@ -31,6 +31,9 @@ import shutil
 from pathlib import Path
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
+import qrcode
+import io
+import base64
 
 # Load environment variables from .env file for local development
 load_dotenv()
@@ -177,18 +180,47 @@ Automated Security Alert from SSWPA Payment System
 def record_payment_attempt(ip: str):
     """Record a payment attempt for the given IP and global tracking"""
     now = datetime.now()
-    
+
     # Record for IP-specific rate limiting
     payment_attempts[ip].append(now)
-    
+
     # Record for global anomaly detection
     global_payment_attempts.append({
         'timestamp': now,
         'ip': ip
     })
-    
+
     # Check for anomalous activity
     check_for_anomaly()
+
+def generate_qr_code(url: str) -> str:
+    """Generate QR code and return as base64 encoded string"""
+    try:
+        logging.info(f"Generating QR code for URL: {url}")
+
+        # Create QR code instance
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        # Create QR code image
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Convert to base64
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        logging.info(f"QR code generated successfully, base64 length: {len(qr_code_base64)}")
+        return qr_code_base64
+    except Exception as e:
+        logging.error(f"Failed to generate QR code: {e}")
+        return None
 
 # Enable CORS for development
 app.add_middleware(
@@ -477,27 +509,109 @@ def send_order_confirmation_email(order_data: dict):
         sender_password = gmail_password
         customer_email = order_data['buyer_email']
         
+        # Generate QR code for order detail page
+        # Use https://sswpa.org in production, localhost for development
+        base_url = "https://sswpa.org"  # Change to your production URL
+        qr_url = f"{base_url}/order/{order_data['id']}"
+        qr_code_base64 = generate_qr_code(qr_url)
+
         # Create message
-        msg = MIMEMultipart()
+        msg = MIMEMultipart('alternative')
         msg['From'] = sender_email
         msg['To'] = customer_email
         msg['Subject'] = f"SSWPA Ticket Confirmation - {order_data['artist_name']} on {order_data['event_date']}"
-        
-        # Load and render email template
-        template = templates.get_template("email_customer_confirmation.txt")
-        body = template.render(
+
+        # Load and render text email template (fallback)
+        text_template = templates.get_template("email_customer_confirmation.txt")
+        text_body = text_template.render(
             buyer_name=order_data.get('buyer_name', 'Customer'),
             recital_title=order_data['recital_title'],
             artist_name=order_data['artist_name'],
             event_date=order_data['event_date'],
             event_time=order_data.get('event_time'),
-            items=order_data['items'],
+            items=order_data['ticket_items'],
             total_amount_cents=order_data['total_amount_cents'],
             order_id=order_data['id'],
             square_payment_id=order_data['square_payment_id']
         )
-        
-        msg.attach(MIMEText(body, 'plain'))
+
+        # Create HTML version with QR code
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #2c3e50;">SSWPA Ticket Confirmation</h2>
+
+            <p>Dear {order_data.get('buyer_name', 'Customer')},</p>
+
+            <p>Thank you for your ticket purchase! Here are your order details:</p>
+
+            <h3 style="color: #3498db;">EVENT DETAILS:</h3>
+            <ul>
+                <li><strong>{order_data['recital_title']}</strong></li>
+                <li>Date: {order_data['event_date']}{f" at {order_data['event_time']}" if order_data.get('event_time') else ""}</li>
+                <li>Venue: Kresge Recital Hall, Carnegie Mellon University</li>
+            </ul>
+
+            <h3 style="color: #3498db;">TICKETS PURCHASED:</h3>
+            <ul>
+        """
+
+        for item in order_data['ticket_items']:
+            html_body += f"<li>{item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f}</li>"
+
+        html_body += f"""
+            </ul>
+            <p><strong>TOTAL: ${order_data['total_amount_cents']/100:.2f}</strong></p>
+
+            <h3 style="color: #3498db;">PAYMENT CONFIRMATION:</h3>
+            <ul>
+                <li>Order ID: #{order_data['id']}</li>
+                <li>Payment ID: {order_data['square_payment_id']}</li>
+            </ul>
+
+            <h3 style="color: #3498db;">QUICK CHECK-IN:</h3>
+            <p>Show this QR code at the door for quick check-in:</p>
+        """
+
+        # Use hosted QR code endpoint instead of base64 embedding
+        qr_image_url = f"{base_url}/qr/{order_data['id']}"
+        html_body += f"""
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="{qr_image_url}" alt="QR Code for Order #{order_data['id']}" style="border: 1px solid #ddd; padding: 10px; max-width: 200px;">
+        </div>
+        <p style="text-align: center; color: #666; font-size: 12px;">Scan this QR code for instant check-in</p>
+        """
+
+        html_body += f"""
+            <p style="text-align: center; color: #666; font-size: 14px;">
+                <strong>Alternative:</strong> Visit <a href="{qr_url}">{qr_url}</a><br>
+                Or manually enter: {base_url}/order/{order_data['id']}
+            </p>
+        """
+
+        html_body += f"""
+            <h3 style="color: #3498db;">IMPORTANT INFORMATION:</h3>
+            <ul>
+                <li>Present this email confirmation at the door for entry</li>
+                <li>All recitals include a "Meet the Artist" reception after the performance</li>
+            </ul>
+
+            <p>Please save this email for your records. We look forward to seeing you at the recital!</p>
+
+            <p>If you have any questions about your order, please contact us at marinaschmidt@comcast.net.</p>
+
+            <p>Best regards,<br>
+            The Steinway Society of Western Pennsylvania</p>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #666; font-size: 12px;">This email was sent automatically from the SSWPA ticketing system.</p>
+        </body>
+        </html>
+        """
+
+        # Attach both versions
+        msg.attach(MIMEText(text_body, 'plain'))
+        msg.attach(MIMEText(html_body, 'html'))
         
         # Send email
         with smtplib.SMTP(smtp_server, smtp_port) as server:
@@ -537,7 +651,7 @@ def send_order_notification_email(order_data: dict):
             recital_title=order_data['recital_title'],
             artist_name=order_data['artist_name'],
             event_date=order_data['event_date'],
-            items=order_data['items'],
+            items=order_data['ticket_items'],
             total_amount_cents=order_data['total_amount_cents'],
             payment_status=order_data['payment_status'],
             square_payment_id=order_data['square_payment_id'],
@@ -1165,6 +1279,40 @@ async def view_order(request: Request, order_id: int):
             "error_message": f"Unable to load order details: {str(e)}",
             "back_url": "/admin/wm"
         }, status_code=500)
+
+@app.get("/qr/{order_id}")
+async def generate_order_qr(order_id: int):
+    """Generate QR code for order - public endpoint"""
+    try:
+        # Check if order exists
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # Generate QR code for this order
+        base_url = "https://sswpa.org"  # Change to your production URL
+        qr_url = f"{base_url}/order/{order_id}"
+        qr_code_base64 = generate_qr_code(qr_url)
+
+        if not qr_code_base64:
+            raise HTTPException(status_code=500, detail="Failed to generate QR code")
+
+        # Return the QR code as PNG image
+        import base64
+        qr_image_data = base64.b64decode(qr_code_base64)
+
+        from fastapi.responses import Response
+        return Response(
+            content=qr_image_data,
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=3600"}  # Cache for 1 hour
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generating QR for order {order_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/health")
 async def health_check():
