@@ -22,7 +22,8 @@ from .database import (
     create_recital, update_recital, delete_recital,
     get_ticket_types_for_recital, get_ticket_type_by_id,
     create_ticket_type, update_ticket_type, delete_ticket_type,
-    create_order, update_order_payment_status, get_order_by_id
+    create_order, update_order_payment_status, get_order_by_id,
+    get_order_check_in, create_order_check_in, is_order_checked_in
 )
 import time
 import secrets
@@ -1126,9 +1127,82 @@ async def get_ticket_type(ticket_type_id: int, request: Request):
         logging.error(f"Error fetching ticket type {ticket_type_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.get("/order/{order_id}", response_class=HTMLResponse)
+async def view_order(request: Request, order_id: int):
+    """View order details - requires admin authentication"""
+    # Check admin authentication using custom session system
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        # Redirect to admin login
+        return RedirectResponse(url="/admin/wm", status_code=302)
+
+    try:
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error_title": "Order Not Found",
+                "error_message": f"Order #{order_id} was not found.",
+                "back_url": "/admin/wm"
+            }, status_code=404)
+
+        # Get check-in information
+        check_in_data = get_order_check_in(order_id)
+
+        return templates.TemplateResponse("order-detail.html", {
+            "request": request,
+            "order": order_data,
+            "order_id": order_id,
+            "check_in": check_in_data,
+            "is_checked_in": check_in_data is not None
+        })
+    except Exception as e:
+        logging.error(f"Error loading order {order_id}: {e}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error_title": "Error Loading Order",
+            "error_message": f"Unable to load order details: {str(e)}",
+            "back_url": "/admin/wm"
+        }, status_code=500)
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.post("/api/order/{order_id}/checkin")
+async def checkin_order(request: Request, order_id: int):
+    """Check in an order - requires admin authentication"""
+    # Check admin authentication
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        return {"success": False, "message": "Authentication required"}
+
+    try:
+        # Check if order exists
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order #{order_id} not found"}
+
+        # Check if already checked in
+        if is_order_checked_in(order_id):
+            return {"success": False, "message": "Order already checked in"}
+
+        # Create check-in record
+        success = create_order_check_in(order_id, checked_in_by="Admin")
+
+        if success:
+            return {
+                "success": True,
+                "message": f"Order #{order_id} checked in successfully",
+                "order_id": order_id
+            }
+        else:
+            return {"success": False, "message": "Failed to check in order"}
+
+    except Exception as e:
+        logging.error(f"Error checking in order {order_id}: {e}")
+        return {"success": False, "message": f"Server error: {str(e)}"}
 
 @app.post("/api/resend-order-emails")
 async def resend_order_emails(request: Request):

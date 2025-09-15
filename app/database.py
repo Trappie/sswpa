@@ -116,6 +116,18 @@ def create_recital_schema():
                 )
             """)
             
+            # Order check-ins table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS order_check_ins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id INTEGER NOT NULL,
+                    checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    checked_in_by TEXT,
+                    notes TEXT,
+                    FOREIGN KEY (order_id) REFERENCES orders(id)
+                )
+            """)
+
             # Donations table (future use)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS donations (
@@ -147,6 +159,7 @@ def check_required_tables() -> dict:
         'ticket_types': False,
         'orders': False,
         'order_items': False,
+        'order_check_ins': False,
         'donations': False,
         'passwords': False,
         'test_data': False
@@ -621,9 +634,48 @@ def get_order_by_id(order_id: int) -> dict:
                 WHERE oi.order_id = ?
             """, (order_id,))
             items = [dict(row) for row in cursor.fetchall()]
-            order_dict['items'] = items
+            order_dict['ticket_items'] = items
             
             return order_dict
     except Exception as e:
         logging.error(f"Failed to get order: {e}")
         return None
+
+# Check-in functions
+def get_order_check_in(order_id: int) -> dict:
+    """Get check-in information for an order"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM order_check_ins
+                WHERE order_id = ?
+                ORDER BY checked_in_at DESC
+                LIMIT 1
+            """, (order_id,))
+            result = cursor.fetchone()
+            return dict(result) if result else None
+    except Exception as e:
+        logging.error(f"Failed to get check-in for order {order_id}: {e}")
+        return None
+
+def create_order_check_in(order_id: int, checked_in_by: str = None, notes: str = None) -> bool:
+    """Create a check-in record for an order"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO order_check_ins (order_id, checked_in_by, notes)
+                VALUES (?, ?, ?)
+            """, (order_id, checked_in_by, notes))
+            conn.commit()
+            logging.info(f"Order {order_id} checked in successfully")
+            return True
+    except Exception as e:
+        logging.error(f"Failed to check in order {order_id}: {e}")
+        return False
+
+def is_order_checked_in(order_id: int) -> bool:
+    """Check if an order has been checked in"""
+    check_in = get_order_check_in(order_id)
+    return check_in is not None
