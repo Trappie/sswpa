@@ -225,9 +225,9 @@ def generate_qr_code(url: str) -> str:
 # Enable CORS for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["https://sswpa.org", "https://www.sswpa.org"],  # Production origins only
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],  # Only necessary methods
     allow_headers=["*"],
 )
 
@@ -409,8 +409,11 @@ def get_secret(secret_id: str):
     if os.getenv('ENVIRONMENT') == 'local':
         env_map = {
             'square-sandbox-app-id': 'SQUARE_SANDBOX_APP_ID',
-            'square-sandbox-location-id': 'SQUARE_SANDBOX_LOCATION_ID', 
+            'square-sandbox-location-id': 'SQUARE_SANDBOX_LOCATION_ID',
             'square-sandbox-access-token': 'SQUARE_SANDBOX_ACCESS_TOKEN',
+            'square-production-app-id': 'SQUARE_PRODUCTION_APP_ID',
+            'square-production-location-id': 'SQUARE_PRODUCTION_LOCATION_ID',
+            'square-production-access-token': 'SQUARE_PRODUCTION_ACCESS_TOKEN',
             'gmail-app-password': 'GMAIL_APP_PASSWORD'
         }
         env_var = env_map.get(secret_id)
@@ -433,11 +436,11 @@ def get_gmail_password():
     return get_secret("gmail-app-password")
 
 def get_square_client():
-    """Get Square client with sandbox credentials"""
+    """Get Square client with production credentials"""
     try:
-        access_token = get_secret("square-sandbox-access-token")
+        access_token = get_secret("square-production-access-token")
         return Square(
-            environment=SquareEnvironment.SANDBOX,
+            environment=SquareEnvironment.PRODUCTION,
             token=access_token
         )
     except Exception as e:
@@ -749,8 +752,8 @@ async def ticket_detail(request: Request, concert_slug: str):
 async def get_square_config():
     """Get Square configuration for client-side initialization"""
     try:
-        app_id = get_secret("square-sandbox-app-id")
-        location_id = get_secret("square-sandbox-location-id")
+        app_id = get_secret("square-production-app-id")
+        location_id = get_secret("square-production-location-id")
         return {
             "appId": app_id,
             "locationId": location_id
@@ -985,7 +988,7 @@ async def admin_wm(request: Request):
             if verify_admin_password(password):
                 session_id = create_admin_session()
                 response = RedirectResponse(url="/admin/wm", status_code=302)
-                response.set_cookie("admin_session", session_id, httponly=True)
+                response.set_cookie("admin_session", session_id, httponly=True, secure=True, samesite="strict")
                 return response
             else:
                 return templates.TemplateResponse("admin-wm.html", {
