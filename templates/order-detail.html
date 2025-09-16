@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSWPA - Order #{{ order.id }} Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            color: #2c3e50;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 16px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status.failed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.processing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status.pending {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .items-table th,
+        .items-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .items-table .qty {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .items-table .price {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .total-row {
+            border-top: 2px solid #3498db;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .total-row td {
+            padding: 15px 12px;
+        }
+
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .print-btn {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .print-btn:hover {
+            background-color: #229954;
+        }
+
+        .btn-checkin {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn-checkin:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-checkin:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .checked-in-status {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin: 5px;
+            border: 2px solid #c3e6cb;
+            font-size: 16px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .checked-in-status i {
+            color: #28a745;
+            margin-right: 8px;
+        }
+
+        @media print {
+            .actions {
+                display: none;
+            }
+
+            body {
+                background: white;
+            }
+
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-ticket-alt"></i> Order #{{ order.id }}</h1>
+            <div class="subtitle">Steinway Society of Western Pennsylvania</div>
+        </div>
+
+        <div class="actions">
+            {% if is_checked_in %}
+                <div class="checked-in-status">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>CHECKED IN</strong> - {{ check_in.checked_in_at }}
+                    {% if check_in.checked_in_by %}by {{ check_in.checked_in_by }}{% endif %}
+                </div>
+            {% else %}
+                <button onclick="checkInOrder()" class="btn btn-checkin" id="checkinBtn">
+                    <i class="fas fa-check"></i> Check In
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-receipt"></i> Ticket Details</div>
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Type</th>
+                        <th>Quantity</th>
+                        <th>Price Each</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if order.ticket_items %}
+                        {% for item in order.ticket_items %}
+                        <tr>
+                            <td>{{ item.ticket_name }}</td>
+                            <td class="qty">{{ item.quantity }}</td>
+                            <td class="price">${{ "%.2f"|format(item.price_per_ticket_cents / 100) }}</td>
+                            <td class="price">${{ "%.2f"|format((item.quantity * item.price_per_ticket_cents) / 100) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">No ticket items found</td>
+                        </tr>
+                    {% endif %}
+                    <tr class="total-row">
+                        <td colspan="3">Total Amount</td>
+                        <td class="price">${{ "%.2f"|format(order.total_amount_cents / 100) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        {% if order.notes %}
+        <div class="card">
+            <div class="card-title"><i class="fas fa-sticky-note"></i> Notes</div>
+            <div class="info-value">{{ order.notes }}</div>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> Order Information</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Order Date</div>
+                    <div class="info-value">{{ order.order_date if order.order_date else 'N/A' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Payment Status</div>
+                    <div class="info-value">
+                        <span class="status {{ order.payment_status }}">
+                            {% if order.payment_status == 'completed' %}
+                                <i class="fas fa-check-circle"></i> Completed
+                            {% elif order.payment_status == 'failed' %}
+                                <i class="fas fa-times-circle"></i> Failed
+                            {% elif order.payment_status == 'processing' %}
+                                <i class="fas fa-clock"></i> Processing
+                            {% else %}
+                                <i class="fas fa-hourglass-half"></i> Pending
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Square Payment ID</div>
+                    <div class="info-value">{{ order.square_payment_id or 'Not assigned' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Total Amount</div>
+                    <div class="info-value">${{ "%.2f"|format(order.total_amount_cents / 100) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-user"></i> Customer Information</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Name</div>
+                    <div class="info-value">{{ order.buyer_name or 'Not provided' }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">{{ order.buyer_email }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">{{ order.phone or 'Not provided' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="fas fa-music"></i> Event Information</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Concert</div>
+                    <div class="info-value">{{ order.recital_title }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Artist</div>
+                    <div class="info-value">{{ order.artist_name }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Date</div>
+                    <div class="info-value">{{ order.event_date }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Time</div>
+                    <div class="info-value">{{ order.event_time or 'TBD' }}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        async function checkInOrder() {
+            const btn = document.getElementById('checkinBtn');
+            const orderId = {{ order_id }};
+
+            // Disable button and show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking In...';
+
+            try {
+                const response = await fetch(`/api/order/${orderId}/checkin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Success - reload page to show checked in status
+                    location.reload();
+                } else {
+                    // Error - show message and re-enable button
+                    alert(`Check-in failed: ${result.message}`);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Check In';
+                }
+            } catch (error) {
+                // Network error
+                alert(`Check-in failed: ${error.message}`);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Check In';
+            }
+        }
+    </script>
+</body>
+</html>

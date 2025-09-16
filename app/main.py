@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form, File, UploadFile, Cookie, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -21,17 +22,214 @@ from .database import (
     create_recital, update_recital, delete_recital,
     get_ticket_types_for_recital, get_ticket_type_by_id,
     create_ticket_type, update_ticket_type, delete_ticket_type,
-    create_order, update_order_payment_status, get_order_by_id
+    create_order, update_order_payment_status, get_order_by_id,
+    get_order_check_in, create_order_check_in, is_order_checked_in
 )
 import time
 import secrets
 import shutil
 from pathlib import Path
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
+import qrcode
+import io
+import base64
 
 # Load environment variables from .env file for local development
 load_dotenv()
 
 app = FastAPI(title="Steinway Society of Western Pennsylvania")
+
+# Rate limiting storage (in-memory)
+payment_attempts = defaultdict(deque)  # IP -> deque of attempt timestamps
+global_payment_attempts = deque()  # Global timeline of all attempts for anomaly detection
+last_alert_time = None  # Track when we last sent an alert to avoid spam
+RATE_LIMITS = {
+    'per_5_minutes': {'limit': 5, 'window': timedelta(minutes=5)},
+    'per_hour': {'limit': 15, 'window': timedelta(hours=1)},
+    'per_day': {'limit': 50, 'window': timedelta(days=1)}
+}
+
+# Anomaly detection settings
+ANOMALY_THRESHOLD = 60  # attempts
+ANOMALY_WINDOW = timedelta(seconds=60)  # within 60 seconds
+ALERT_COOLDOWN = timedelta(minutes=15)  # don't send alerts more than once per 15 minutes
+
+def cleanup_old_attempts(ip: str):
+    """Remove attempts older than the longest window (1 day)"""
+    now = datetime.now()
+    cutoff = now - timedelta(days=1)
+    
+    # Remove old attempts
+    while payment_attempts[ip] and payment_attempts[ip][0] < cutoff:
+        payment_attempts[ip].popleft()
+
+def check_rate_limit(ip: str) -> tuple[bool, str]:
+    """Check if IP is within rate limits. Returns (allowed, error_message)"""
+    now = datetime.now()
+    cleanup_old_attempts(ip)
+    
+    # Check each rate limit
+    for limit_name, config in RATE_LIMITS.items():
+        cutoff = now - config['window']
+        # Count attempts within this window
+        recent_attempts = sum(1 for attempt_time in payment_attempts[ip] if attempt_time > cutoff)
+        
+        if recent_attempts >= config['limit']:
+            if limit_name == 'per_5_minutes':
+                return False, "Too many payment attempts. Please wait 5 minutes before trying again."
+            elif limit_name == 'per_hour':
+                return False, "Too many payment attempts. Please wait before trying again."
+            else:  # per_day
+                return False, "Daily payment limit reached. Please try again tomorrow."
+    
+    return True, ""
+
+def cleanup_global_attempts():
+    """Remove global attempts older than the anomaly window"""
+    now = datetime.now()
+    cutoff = now - ANOMALY_WINDOW
+    
+    while global_payment_attempts and global_payment_attempts[0]['timestamp'] < cutoff:
+        global_payment_attempts.popleft()
+
+def check_for_anomaly():
+    """Check if we're seeing anomalous payment activity and send alert if needed"""
+    global last_alert_time
+    
+    now = datetime.now()
+    cleanup_global_attempts()
+    
+    # Count recent attempts
+    recent_count = len(global_payment_attempts)
+    
+    # Check if we've exceeded the threshold
+    if recent_count >= ANOMALY_THRESHOLD:
+        # Check if we're not in cooldown period
+        if last_alert_time is None or (now - last_alert_time) > ALERT_COOLDOWN:
+            send_security_alert(recent_count, now)
+            last_alert_time = now
+            logging.warning(f"Security alert sent: {recent_count} payment attempts in {ANOMALY_WINDOW.total_seconds()} seconds")
+
+def send_security_alert(attempt_count: int, detection_time: datetime):
+    """Send security alert email about suspicious payment activity"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        recipient_email = "wu.di.network@gmail.com"
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = f"🚨 SSWPA Security Alert: {attempt_count} Payment Attempts Detected"
+        
+        # Get unique IPs from recent attempts
+        unique_ips = set()
+        for attempt in global_payment_attempts:
+            unique_ips.add(attempt['ip'])
+        
+        # Email body
+        body = f"""
+SECURITY ALERT: Suspicious Payment Activity Detected
+
+TIME: {detection_time.strftime('%Y-%m-%d %H:%M:%S')}
+ATTEMPTS: {attempt_count} payment attempts in 60 seconds
+UNIQUE IPs: {len(unique_ips)} different IP addresses
+
+This exceeds the normal threshold of {ANOMALY_THRESHOLD} attempts per minute.
+This could indicate:
+- Brute force attack on payment system
+- Automated bot testing stolen cards
+- DDoS attempt on payment endpoints
+
+IP ADDRESSES INVOLVED:
+{chr(10).join(f'• {ip}' for ip in sorted(unique_ips))}
+
+RECOMMENDATION:
+- Monitor server logs for continued suspicious activity
+- Consider implementing additional security measures if attacks persist
+- Check Cloudflare/firewall logs for blocked requests
+
+This alert will not repeat for 15 minutes to prevent spam.
+
+---
+Automated Security Alert from SSWPA Payment System
+        """
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        logging.info(f"Security alert email sent successfully")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Failed to send security alert email: {e}")
+        return False
+
+def record_payment_attempt(ip: str):
+    """Record a payment attempt for the given IP and global tracking"""
+    now = datetime.now()
+
+    # Record for IP-specific rate limiting
+    payment_attempts[ip].append(now)
+
+    # Record for global anomaly detection
+    global_payment_attempts.append({
+        'timestamp': now,
+        'ip': ip
+    })
+
+    # Check for anomalous activity
+    check_for_anomaly()
+
+def generate_qr_code(url: str) -> str:
+    """Generate QR code and return as base64 encoded string"""
+    try:
+        logging.info(f"Generating QR code for URL: {url}")
+
+        # Create QR code instance
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        # Create QR code image
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # Convert to base64
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        logging.info(f"QR code generated successfully, base64 length: {len(qr_code_base64)}")
+        return qr_code_base64
+    except Exception as e:
+        logging.error(f"Failed to generate QR code: {e}")
+        return None
+
+# Enable CORS for development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Simple session storage (in production, use Redis or database)
 admin_sessions = {}
@@ -200,6 +398,8 @@ class PaymentRequest(BaseModel):
     amount: int
     currency: str = "USD"
     buyer_email: str
+    buyer_first_name: str
+    buyer_last_name: str
     recital_id: int
     ticket_items: list[TicketItem]
 
@@ -254,7 +454,7 @@ def send_contact_email(form_data: dict):
         smtp_port = 587
         sender_email = "wu.di.network@gmail.com"
         sender_password = gmail_password
-        recipient_emails = ["marinaschmidt@comcast.net", "wu.di.network@gmail.com"]  # Send to both Marina and Di
+        recipient_emails = ["wu.di.network@gmail.com"]  # Send to Di only
         
         # Create message
         msg = MIMEMultipart()
@@ -295,6 +495,180 @@ Sent from SSWPA website contact form
         
     except Exception as e:
         logging.error(f"Failed to send contact email: {e}")
+        return False
+
+def send_order_confirmation_email(order_data: dict):
+    """Send order confirmation email to customer"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        customer_email = order_data['buyer_email']
+        
+        # Generate QR code for order detail page
+        # Use https://sswpa.org in production, localhost for development
+        base_url = "https://sswpa.org"  # Change to your production URL
+        qr_url = f"{base_url}/order/{order_data['id']}"
+        qr_code_base64 = generate_qr_code(qr_url)
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['From'] = sender_email
+        msg['To'] = customer_email
+        msg['Subject'] = f"SSWPA Ticket Confirmation - {order_data['artist_name']} on {order_data['event_date']}"
+
+        # Load and render text email template (fallback)
+        text_template = templates.get_template("email_customer_confirmation.txt")
+        text_body = text_template.render(
+            buyer_name=order_data.get('buyer_name', 'Customer'),
+            recital_title=order_data['recital_title'],
+            artist_name=order_data['artist_name'],
+            event_date=order_data['event_date'],
+            event_time=order_data.get('event_time'),
+            items=order_data['ticket_items'],
+            total_amount_cents=order_data['total_amount_cents'],
+            order_id=order_data['id'],
+            square_payment_id=order_data['square_payment_id']
+        )
+
+        # Create HTML version with QR code
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #2c3e50;">SSWPA Ticket Confirmation</h2>
+
+            <p>Dear {order_data.get('buyer_name', 'Customer')},</p>
+
+            <p>Thank you for your ticket purchase! Here are your order details:</p>
+
+            <h3 style="color: #3498db;">EVENT DETAILS:</h3>
+            <ul>
+                <li><strong>{order_data['recital_title']}</strong></li>
+                <li>Date: {order_data['event_date']}{f" at {order_data['event_time']}" if order_data.get('event_time') else ""}</li>
+                <li>Venue: Kresge Recital Hall, Carnegie Mellon University</li>
+            </ul>
+
+            <h3 style="color: #3498db;">TICKETS PURCHASED:</h3>
+            <ul>
+        """
+
+        for item in order_data['ticket_items']:
+            html_body += f"<li>{item['quantity']}x {item['ticket_name']} @ ${item['price_per_ticket_cents']/100:.2f}</li>"
+
+        html_body += f"""
+            </ul>
+            <p><strong>TOTAL: ${order_data['total_amount_cents']/100:.2f}</strong></p>
+
+            <h3 style="color: #3498db;">PAYMENT CONFIRMATION:</h3>
+            <ul>
+                <li>Order ID: #{order_data['id']}</li>
+                <li>Payment ID: {order_data['square_payment_id']}</li>
+            </ul>
+
+            <h3 style="color: #3498db;">QUICK CHECK-IN:</h3>
+            <p>Show this QR code at the door for quick check-in:</p>
+        """
+
+        # Use hosted QR code endpoint instead of base64 embedding
+        qr_image_url = f"{base_url}/qr/{order_data['id']}"
+        html_body += f"""
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="{qr_image_url}" alt="QR Code for Order #{order_data['id']}" style="border: 1px solid #ddd; padding: 10px; max-width: 200px;">
+        </div>
+        <p style="text-align: center; color: #666; font-size: 12px;">Scan this QR code for instant check-in</p>
+        """
+
+        html_body += f"""
+            <p style="text-align: center; color: #666; font-size: 14px;">
+                <strong>Alternative:</strong> Visit <a href="{qr_url}">{qr_url}</a><br>
+                Or manually enter: {base_url}/order/{order_data['id']}
+            </p>
+        """
+
+        html_body += f"""
+            <h3 style="color: #3498db;">IMPORTANT INFORMATION:</h3>
+            <ul>
+                <li>Present this email confirmation at the door for entry</li>
+                <li>All recitals include a "Meet the Artist" reception after the performance</li>
+            </ul>
+
+            <p>Please save this email for your records. We look forward to seeing you at the recital!</p>
+
+            <p>If you have any questions about your order, please contact us at marinaschmidt@comcast.net.</p>
+
+            <p>Best regards,<br>
+            The Steinway Society of Western Pennsylvania</p>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #666; font-size: 12px;">This email was sent automatically from the SSWPA ticketing system.</p>
+        </body>
+        </html>
+        """
+
+        # Attach both versions
+        msg.attach(MIMEText(text_body, 'plain'))
+        msg.attach(MIMEText(html_body, 'html'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send order confirmation email: {e}")
+        return False
+
+def send_order_notification_email(order_data: dict):
+    """Send order notification email to webmaster/admin"""
+    try:
+        gmail_password = get_gmail_password()
+        
+        # Email configuration
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "wu.di.network@gmail.com"
+        sender_password = gmail_password
+        recipient_emails = ["wu.di.network@gmail.com"]  # Admin email
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = ", ".join(recipient_emails)
+        msg['Subject'] = f"SSWPA New Ticket Order - {order_data['artist_name']} (${order_data['total_amount_cents']/100:.2f})"
+        
+        # Load and render email template
+        template = templates.get_template("email_admin_notification.txt")
+        body = template.render(
+            buyer_email=order_data['buyer_email'],
+            buyer_name=order_data.get('buyer_name'),
+            order_id=order_data['id'],
+            recital_title=order_data['recital_title'],
+            artist_name=order_data['artist_name'],
+            event_date=order_data['event_date'],
+            items=order_data['ticket_items'],
+            total_amount_cents=order_data['total_amount_cents'],
+            payment_status=order_data['payment_status'],
+            square_payment_id=order_data['square_payment_id'],
+            order_date=order_data['order_date']
+        )
+        
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Send email to all recipients
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send order notification email: {e}")
         return False
 
 @app.post("/contact")
@@ -386,9 +760,23 @@ async def get_square_config():
         return {"error": "Failed to load payment configuration"}
 
 @app.post("/process-payment")
-async def process_payment(payment_request: PaymentRequest):
+async def process_payment(payment_request: PaymentRequest, request: Request):
     """Process payment using Square API"""
     try:
+        # Get client IP for rate limiting
+        client_ip = request.client.host
+        
+        # Check rate limits
+        allowed, error_message = check_rate_limit(client_ip)
+        if not allowed:
+            return {
+                "success": False,
+                "message": error_message,
+                "rate_limited": True
+            }
+        
+        # Record this payment attempt
+        record_payment_attempt(client_ip)
         # Get recital details for order description
         recital = get_recital_by_id(payment_request.recital_id)
         if not recital:
@@ -416,6 +804,7 @@ async def process_payment(payment_request: PaymentRequest):
         order_data = {
             'recital_id': payment_request.recital_id,
             'buyer_email': payment_request.buyer_email,
+            'buyer_name': f"{payment_request.buyer_first_name} {payment_request.buyer_last_name}".strip(),
             'total_amount_cents': payment_request.amount,
             'payment_status': 'processing',
             'notes': order_description
@@ -459,6 +848,22 @@ async def process_payment(payment_request: PaymentRequest):
             logging.info(f"Payment successful: {payment.id}")
             update_order_payment_status(order_id, 'completed', payment.id)
             
+            # Send email notifications
+            try:
+                # Get complete order details for email
+                complete_order = get_order_by_id(order_id)
+                if complete_order:
+                    # Send confirmation email to customer
+                    send_order_confirmation_email(complete_order)
+                    logging.info(f"Order confirmation email sent to {payment_request.buyer_email}")
+                    
+                    # Send notification email to admin/webmaster
+                    send_order_notification_email(complete_order)
+                    logging.info(f"Order notification email sent to administrators")
+            except Exception as email_error:
+                # Don't fail the payment if email fails
+                logging.error(f"Failed to send order emails: {email_error}")
+            
             return {
                 "success": True,
                 "payment_id": payment.id,
@@ -468,13 +873,23 @@ async def process_payment(payment_request: PaymentRequest):
                 "receipt_url": payment.receipt_url,
                 "message": "Payment processed successfully!"
             }
-            
+                
     except Exception as e:
         logging.error(f"Payment processing error: {e}")
-        return {
-            "success": False,
-            "message": "An error occurred while processing your payment."
-        }
+        
+        # If we created an order but had an error, mark it as failed and allow retry
+        if 'order_id' in locals() and order_id:
+            update_order_payment_status(order_id, 'failed')
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment.",
+                "order_id": order_id
+            }
+        else:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment."
+            }
 
 @app.post("/test-db-write")
 async def test_db_write(message: str = "Test message"):
@@ -826,6 +1241,289 @@ async def get_ticket_type(ticket_type_id: int, request: Request):
         logging.error(f"Error fetching ticket type {ticket_type_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.get("/order/{order_id}", response_class=HTMLResponse)
+async def view_order(request: Request, order_id: int):
+    """View order details - requires admin authentication"""
+    # Check admin authentication using custom session system
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        # Redirect to admin login
+        return RedirectResponse(url="/admin/wm", status_code=302)
+
+    try:
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error_title": "Order Not Found",
+                "error_message": f"Order #{order_id} was not found.",
+                "back_url": "/admin/wm"
+            }, status_code=404)
+
+        # Get check-in information
+        check_in_data = get_order_check_in(order_id)
+
+        return templates.TemplateResponse("order-detail.html", {
+            "request": request,
+            "order": order_data,
+            "order_id": order_id,
+            "check_in": check_in_data,
+            "is_checked_in": check_in_data is not None
+        })
+    except Exception as e:
+        logging.error(f"Error loading order {order_id}: {e}")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error_title": "Error Loading Order",
+            "error_message": f"Unable to load order details: {str(e)}",
+            "back_url": "/admin/wm"
+        }, status_code=500)
+
+@app.get("/qr/{order_id}")
+async def generate_order_qr(order_id: int):
+    """Generate QR code for order - public endpoint"""
+    try:
+        # Check if order exists
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        # Generate QR code for this order
+        base_url = "https://sswpa.org"  # Change to your production URL
+        qr_url = f"{base_url}/order/{order_id}"
+        qr_code_base64 = generate_qr_code(qr_url)
+
+        if not qr_code_base64:
+            raise HTTPException(status_code=500, detail="Failed to generate QR code")
+
+        # Return the QR code as PNG image
+        import base64
+        qr_image_data = base64.b64decode(qr_code_base64)
+
+        from fastapi.responses import Response
+        return Response(
+            content=qr_image_data,
+            media_type="image/png",
+            headers={"Cache-Control": "public, max-age=3600"}  # Cache for 1 hour
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generating QR for order {order_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.post("/api/order/{order_id}/checkin")
+async def checkin_order(request: Request, order_id: int):
+    """Check in an order - requires admin authentication"""
+    # Check admin authentication
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        return {"success": False, "message": "Authentication required"}
+
+    try:
+        # Check if order exists
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order #{order_id} not found"}
+
+        # Check if already checked in
+        if is_order_checked_in(order_id):
+            return {"success": False, "message": "Order already checked in"}
+
+        # Create check-in record
+        success = create_order_check_in(order_id, checked_in_by="Admin")
+
+        if success:
+            return {
+                "success": True,
+                "message": f"Order #{order_id} checked in successfully",
+                "order_id": order_id
+            }
+        else:
+            return {"success": False, "message": "Failed to check in order"}
+
+    except Exception as e:
+        logging.error(f"Error checking in order {order_id}: {e}")
+        return {"success": False, "message": f"Server error: {str(e)}"}
+
+@app.post("/api/resend-order-emails")
+async def resend_order_emails(request: Request):
+    """Resend confirmation and notification emails for a specific order"""
+    try:
+        # Parse JSON body
+        body = await request.json()
+        order_id = body.get("order_id")
+        
+        if not order_id:
+            return {"success": False, "message": "Order ID is required"}
+        
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order {order_id} not found"}
+        
+        # Attempt to send both emails
+        confirmation_sent = send_order_confirmation_email(order_data)
+        notification_sent = send_order_notification_email(order_data)
+        
+        if confirmation_sent and notification_sent:
+            return {
+                "success": True, 
+                "message": f"Both emails sent successfully for Order #{order_id}",
+                "confirmation_sent": True,
+                "notification_sent": True
+            }
+        elif confirmation_sent:
+            return {
+                "success": True, 
+                "message": f"Customer confirmation sent, but admin notification failed for Order #{order_id}",
+                "confirmation_sent": True,
+                "notification_sent": False
+            }
+        elif notification_sent:
+            return {
+                "success": True, 
+                "message": f"Admin notification sent, but customer confirmation failed for Order #{order_id}",
+                "confirmation_sent": False,
+                "notification_sent": True
+            }
+        else:
+            return {
+                "success": False, 
+                "message": f"Failed to send both emails for Order #{order_id}",
+                "confirmation_sent": False,
+                "notification_sent": False
+            }
+            
+    except Exception as e:
+        logging.error(f"Error resending emails: {e}")
+        return {"success": False, "message": f"Server error: {str(e)}"}
+
+@app.post("/api/retry-payment")
+async def retry_payment(request: Request):
+    """Retry payment for an existing order"""
+    try:
+        # Get client IP for rate limiting
+        client_ip = request.client.host
+        
+        # Check rate limits
+        allowed, error_message = check_rate_limit(client_ip)
+        if not allowed:
+            return {
+                "success": False,
+                "message": error_message,
+                "rate_limited": True
+            }
+        
+        # Parse JSON body
+        body = await request.json()
+        order_id = body.get("order_id")
+        source_id = body.get("source_id")
+        
+        # Record this payment attempt
+        record_payment_attempt(client_ip)
+        
+        if not order_id or not source_id:
+            return {"success": False, "message": "Order ID and source ID are required"}
+        
+        # Get order data from database
+        order_data = get_order_by_id(order_id)
+        if not order_data:
+            return {"success": False, "message": f"Order {order_id} not found"}
+        
+        # Check if order is in a retry-able state
+        if order_data['payment_status'] not in ['failed', 'processing']:
+            return {"success": False, "message": "Order payment cannot be retried"}
+        
+        # Get Square client
+        client = get_square_client()
+        
+        # Create a unique idempotency key for the retry
+        idempotency_key = str(uuid.uuid4())
+        
+        # Build order description for Square
+        order_description = f"SSWPA Retry: Order #{order_id} - {order_data['recital_title']}"
+        
+        # Process the payment using Square API
+        result = client.payments.create(
+            source_id=source_id,
+            idempotency_key=idempotency_key,
+            amount_money={
+                'amount': order_data['total_amount_cents'],
+                'currency': 'USD'
+            },
+            buyer_email_address=order_data['buyer_email'],
+            note=order_description[:500]
+        )
+        
+        # Check if payment failed (can have errors or failed status)
+        payment = None
+        try:
+            payment = result.payment if hasattr(result, 'payment') else None
+        except:
+            # In case of any issues accessing payment object
+            pass
+        
+        # Check for errors or failed payment status
+        has_errors = result.errors and len(result.errors) > 0
+        payment_failed = payment and hasattr(payment, 'status') and payment.status == 'FAILED'
+        
+        if has_errors or payment_failed:
+            # Handle errors - update order status to failed
+            error_details = []
+            if has_errors:
+                error_details = [error.detail for error in result.errors]
+            else:
+                error_details = ["Payment failed"]
+                
+            logging.error(f"Payment retry failed: {error_details}")
+            update_order_payment_status(order_id, 'failed')
+            return {
+                "success": False,
+                "errors": error_details,
+                "message": "Payment retry failed. Please try again.",
+                "order_id": order_id
+            }
+        
+        # Payment successful - update order status
+        if not payment:
+            raise Exception("Payment object not found in successful response")
+        payment_id = payment.id
+        
+        update_order_payment_status(order_id, 'completed', payment_id)
+        
+        # Get updated order data for emails
+        updated_order_data = get_order_by_id(order_id)
+        
+        # Send confirmation and notification emails
+        send_order_confirmation_email(updated_order_data)
+        send_order_notification_email(updated_order_data)
+        
+        return {
+            "success": True,
+            "message": "Payment completed successfully!",
+            "payment_id": payment_id,
+            "order_id": order_id
+        }
+            
+    except Exception as e:
+        logging.error(f"Error retrying payment: {e}")
+        
+        # If we have an order_id, allow retry even on unexpected errors
+        if 'order_id' in locals() and order_id:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment. Please try again.",
+                "order_id": order_id
+            }
+        else:
+            return {
+                "success": False,
+                "message": "An error occurred while processing your payment."
+            }

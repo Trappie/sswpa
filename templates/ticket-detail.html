@@ -21,6 +21,66 @@
         .no-spinners {
             -moz-appearance: textfield;
         }
+        
+        /* Form validation styles */
+        .form-group input.invalid {
+            border: 2px solid #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        .form-group input.valid {
+            border: 2px solid #28a745;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        /* Disabled button styles */
+        .btn:disabled {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #fff;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        
+        .btn:disabled:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            transform: none;
+        }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #666;
+            font-size: 16px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -117,8 +177,21 @@
                             <h4>Checkout</h4>
                             
                             <div class="form-group">
+                                <label for="buyer-first-name">First Name *</label>
+                                <input type="text" id="buyer-first-name" required>
+                                <div class="error-message" id="first-name-error">First name is required</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="buyer-last-name">Last Name *</label>
+                                <input type="text" id="buyer-last-name" required>
+                                <div class="error-message" id="last-name-error">Last name is required</div>
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="buyer-email">Email Address *</label>
                                 <input type="email" id="buyer-email" required>
+                                <div class="error-message" id="email-error">Please enter a valid email address</div>
                             </div>
                             
                             <div class="payment-form">
@@ -131,6 +204,11 @@
                                 <button id="cancel-button" class="btn btn-outline-light" onclick="cancelCheckout()">
                                     Cancel
                                 </button>
+                                
+                                <div id="payment-loading" class="loading-spinner">
+                                    <div class="spinner"></div>
+                                    <div class="loading-text">Processing your payment...</div>
+                                </div>
                             </div>
                             
                             <div id="payment-status" style="display: none;"></div>
@@ -143,9 +221,8 @@
                         <div class="important-notes">
                             <h4>Important Information</h4>
                             <ul>
-                                <li><strong>No Physical Tickets Required</strong> - Your purchase adds you to our pre-paid ticket list</li>
+                                <li><strong>Email Confirmation Required</strong> - Present your email confirmation at the door for entry</li>
                                 <li><strong>Free for SSWPA Members</strong> - Members and CMU students with ID get free admission</li>
-                                <li><strong>Box Office Check-in</strong> - Simply provide your name at the door for confirmation</li>
                                 <li><strong>Meet the Artist</strong> - Reception included after every performance</li>
                             </ul>
                         </div>
@@ -211,6 +288,13 @@
             
             const addToCartBtn = document.getElementById('add-to-cart');
             addToCartBtn.disabled = totalTickets === 0;
+            
+            // Update button text based on state
+            if (totalTickets === 0) {
+                addToCartBtn.textContent = 'Select Tickets to Continue';
+            } else {
+                addToCartBtn.textContent = 'Purchase Tickets';
+            }
         }
 
         async function initializeSquare() {
@@ -269,22 +353,85 @@
             return items;
         }
 
-        async function processPayment() {
-            const emailInput = document.getElementById('buyer-email');
-            const email = emailInput.value.trim();
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function validateField(input, errorElement, validator = null) {
+            const value = input.value.trim();
+            const isValid = validator ? validator(value) : value !== '';
             
-            if (!email) {
-                alert('Please enter your email address.');
-                return;
+            if (isValid) {
+                input.classList.remove('invalid');
+                input.classList.add('valid');
+                errorElement.style.display = 'none';
+            } else {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                errorElement.style.display = 'block';
             }
             
+            return isValid;
+        }
+
+        function validateForm() {
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstNameError = document.getElementById('first-name-error');
+            const lastNameError = document.getElementById('last-name-error');
+            const emailError = document.getElementById('email-error');
+            
+            const isFirstNameValid = validateField(firstNameInput, firstNameError);
+            const isLastNameValid = validateField(lastNameInput, lastNameError);
+            const isEmailValid = validateField(emailInput, emailError, validateEmail);
+            
+            return isFirstNameValid && isLastNameValid && isEmailValid;
+        }
+
+        async function processPayment() {
+            // Validate all form fields
+            if (!validateForm()) {
+                return; // Stop if validation fails
+            }
+            
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            const email = emailInput.value.trim();
+            
+            // Show loading spinner and hide buttons
+            const payButton = document.getElementById('pay-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const loadingSpinner = document.getElementById('payment-loading');
             const statusDiv = document.getElementById('payment-status');
-            statusDiv.innerHTML = '<div class="alert alert-info">Processing payment...</div>';
-            statusDiv.style.display = 'block';
+            
+            payButton.style.display = 'none';
+            cancelButton.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            statusDiv.style.display = 'none';
+            
+            // Helper function to show results
+            function showPaymentResult(html, isSuccess = false, hasRetryButton = false) {
+                loadingSpinner.style.display = 'none';
+                statusDiv.innerHTML = html;
+                statusDiv.style.display = 'block';
+                
+                if (!isSuccess && !hasRetryButton) {
+                    // Show original buttons again only if there's no retry button
+                    payButton.style.display = 'inline-block';
+                    cancelButton.style.display = 'inline-block';
+                }
+            }
             
             try {
                 if (!card) {
-                    statusDiv.innerHTML = '<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>';
+                    showPaymentResult('<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>');
                     return;
                 }
                 
@@ -301,6 +448,8 @@
                             amount: Math.round(currentTotal * 100), // Convert to cents
                             currency: 'USD',
                             buyer_email: email,
+                            buyer_first_name: firstName,
+                            buyer_last_name: lastName,
                             recital_id: recitalId,
                             ticket_items: collectTicketItems()
                         })
@@ -309,19 +458,145 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        statusDiv.innerHTML = '<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>';
-                        document.getElementById('pay-button').style.display = 'none';
+                        showPaymentResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
                     } else {
-                        statusDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
+                        // Check if this was rate limited
+                        if (data.rate_limited) {
+                            showPaymentResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
+                        // Check if this was a Square processing failure (has order_id)
+                        else if (data.order_id) {
+                            showPaymentResult(`
+                                <div class="alert alert-error">
+                                    ${data.message}
+                                    <div style="margin-top: 10px;">
+                                        <button onclick="retryPayment(${data.order_id})" class="btn btn-primary-light" style="font-size: 14px; padding: 8px 16px;">
+                                            Retry Payment
+                                        </button>
+                                    </div>
+                                </div>
+                            `, false, true);
+                        } else {
+                            showPaymentResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
                     }
                 } else {
-                    statusDiv.innerHTML = '<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>';
+                    showPaymentResult('<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>');
                 }
             } catch (error) {
                 console.error('Payment error:', error);
-                statusDiv.innerHTML = '<div class="alert alert-error">Payment failed. Please try again.</div>';
+                showPaymentResult('<div class="alert alert-error">Payment failed. Please try again.</div>');
             }
         }
+
+        async function retryPayment(orderId) {
+            // Show loading state
+            const statusDiv = document.getElementById('payment-status');
+            const loadingSpinner = document.getElementById('payment-loading');
+            
+            statusDiv.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            
+            // Helper function to show retry results
+            function showRetryResult(html, isSuccess = false) {
+                loadingSpinner.style.display = 'none';
+                statusDiv.innerHTML = html;
+                statusDiv.style.display = 'block';
+            }
+            
+            try {
+                if (!card) {
+                    showRetryResult('<div class="alert alert-error">Payment system not initialized. Please refresh the page.</div>');
+                    return;
+                }
+                
+                const result = await card.tokenize();
+                
+                if (result.status === 'OK') {
+                    const response = await fetch('/api/retry-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            source_id: result.token
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showRetryResult('<div class="alert alert-success">' + data.message + '<br>Payment ID: ' + data.payment_id + '</div>', true);
+                    } else {
+                        // Check if retry was rate limited
+                        if (data.rate_limited) {
+                            showRetryResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
+                        // If retry fails, show another retry option
+                        else if (data.order_id) {
+                            showRetryResult(`
+                                <div class="alert alert-error">
+                                    ${data.message}
+                                    <div style="margin-top: 10px;">
+                                        <button onclick="retryPayment(${data.order_id})" class="btn btn-primary-light" style="font-size: 14px; padding: 8px 16px;">
+                                            Retry Payment Again
+                                        </button>
+                                    </div>
+                                </div>
+                            `);
+                        } else {
+                            showRetryResult('<div class="alert alert-error">' + data.message + '</div>');
+                        }
+                    }
+                } else {
+                    showRetryResult('<div class="alert alert-error">Card tokenization failed. Please check your card details.</div>');
+                }
+            } catch (error) {
+                console.error('Retry payment error:', error);
+                showRetryResult('<div class="alert alert-error">Payment retry failed. Please try again.</div>');
+            }
+        }
+
+        // Add real-time validation event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstNameInput = document.getElementById('buyer-first-name');
+            const lastNameInput = document.getElementById('buyer-last-name');
+            const emailInput = document.getElementById('buyer-email');
+            
+            const firstNameError = document.getElementById('first-name-error');
+            const lastNameError = document.getElementById('last-name-error');
+            const emailError = document.getElementById('email-error');
+            
+            // Add blur event listeners for validation
+            firstNameInput.addEventListener('blur', function() {
+                validateField(this, firstNameError);
+            });
+            
+            lastNameInput.addEventListener('blur', function() {
+                validateField(this, lastNameError);
+            });
+            
+            emailInput.addEventListener('blur', function() {
+                validateField(this, emailError, validateEmail);
+            });
+            
+            // Clear validation styles when user starts typing
+            firstNameInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                firstNameError.style.display = 'none';
+            });
+            
+            lastNameInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                lastNameError.style.display = 'none';
+            });
+            
+            emailInput.addEventListener('input', function() {
+                this.classList.remove('invalid', 'valid');
+                emailError.style.display = 'none';
+            });
+        });
 
         // Initialize
         updateTotal();
