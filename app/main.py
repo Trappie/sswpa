@@ -457,7 +457,7 @@ def send_contact_email(form_data: dict):
         smtp_port = 587
         sender_email = "wu.di.network@gmail.com"
         sender_password = gmail_password
-        recipient_emails = ["wu.di.network@gmail.com"]  # Send to Di only
+        recipient_emails = ["wu.di.network@gmail.com", "marinaschmidt@comcast.net"]  # Send to Di and Marina
         
         # Create message
         msg = MIMEMultipart()
@@ -637,7 +637,7 @@ def send_order_notification_email(order_data: dict):
         smtp_port = 587
         sender_email = "wu.di.network@gmail.com"
         sender_password = gmail_password
-        recipient_emails = ["wu.di.network@gmail.com"]  # Admin email
+        recipient_emails = ["wu.di.network@gmail.com", "marinaschmidt@comcast.net"]  # Admin and Marina emails
         
         # Create message
         msg = MIMEMultipart()
