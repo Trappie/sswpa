@@ -678,8 +678,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="r_description">Description:</label>
-                    <textarea id="r_description" name="description" rows="3" style="resize: vertical;"></textarea>
+                    <label for="r_program">Program (Markdown supported):</label>
+                    <textarea id="r_program" name="program" rows="4" style="resize: vertical;" placeholder="Enter the concert program details..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="r_description">Biography (Markdown supported):</label>
+                    <textarea id="r_description" name="description" rows="4" style="resize: vertical;" placeholder="Enter artist biography..."></textarea>
                 </div>
                 
                 <div class="form-row">
@@ -878,6 +883,7 @@
                         // Populate form fields
                         document.getElementById('r_title').value = recital.title || '';
                         document.getElementById('r_artist_name').value = recital.artist_name || '';
+                        document.getElementById('r_program').value = recital.program || '';
                         document.getElementById('r_description').value = recital.description || '';
                         document.getElementById('r_venue').value = recital.venue || '';
                         document.getElementById('r_venue_address').value = recital.venue_address || '';

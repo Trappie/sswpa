@@ -56,6 +56,7 @@ def create_recital_schema():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT NOT NULL,
                     artist_name TEXT NOT NULL,
+                    program TEXT,
                     description TEXT,
                     venue TEXT NOT NULL,
                     venue_address TEXT,
@@ -143,7 +144,14 @@ def create_recital_schema():
                     message TEXT
                 )
             """)
-            
+
+            # Add program column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE recitals ADD COLUMN program TEXT")
+            except sqlite3.OperationalError:
+                # Column already exists, ignore
+                pass
+
             conn.commit()
             logging.info("Recital schema created successfully")
             return True
@@ -364,12 +372,12 @@ def create_recital(recital_data: dict) -> int:
             # Create the recital
             cursor.execute("""
                 INSERT INTO recitals (
-                    title, artist_name, description, venue, venue_address,
+                    title, artist_name, program, description, venue, venue_address,
                     event_date, event_time, status, slug, image_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                recital_data['title'], recital_data['artist_name'], recital_data.get('description'),
-                recital_data['venue'], recital_data.get('venue_address'),
+                recital_data['title'], recital_data['artist_name'], recital_data.get('program'),
+                recital_data.get('description'), recital_data['venue'], recital_data.get('venue_address'),
                 recital_data['event_date'], recital_data['event_time'],
                 recital_data.get('status', 'upcoming'), recital_data['slug'],
                 recital_data.get('image_url')
@@ -425,13 +433,13 @@ def update_recital(recital_id: int, recital_data: dict) -> bool:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE recitals SET
-                    title = ?, artist_name = ?, description = ?, venue = ?, venue_address = ?,
+                    title = ?, artist_name = ?, program = ?, description = ?, venue = ?, venue_address = ?,
                     event_date = ?, event_time = ?, status = ?, slug = ?, image_url = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (
-                recital_data['title'], recital_data['artist_name'], recital_data.get('description'),
-                recital_data['venue'], recital_data.get('venue_address'),
+                recital_data['title'], recital_data['artist_name'], recital_data.get('program'),
+                recital_data.get('description'), recital_data['venue'], recital_data.get('venue_address'),
                 recital_data['event_date'], recital_data['event_time'],
                 recital_data.get('status', 'upcoming'), recital_data['slug'],
                 recital_data.get('image_url'), recital_id

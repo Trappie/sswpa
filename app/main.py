@@ -14,6 +14,7 @@ from square import Square
 from square.environment import SquareEnvironment
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import markdown
 from .database import (
     init_database, write_test_data, get_test_data,
     has_admin_password, set_admin_password, verify_admin_password,
@@ -303,6 +304,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
+
+# Add Markdown filter to Jinja2
+def markdown_filter(text):
+    """Convert Markdown text to HTML"""
+    if not text:
+        return ""
+    return markdown.markdown(text, extensions=['nl2br', 'tables', 'fenced_code'])
+
+templates.env.filters['markdown'] = markdown_filter
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -1045,15 +1055,15 @@ async def admin_wm(request: Request):
                 # Handle image upload
                 image_path = None
                 try:
-                    files = await request.form()
-                    if 'image' in files and hasattr(files['image'], 'filename') and files['image'].filename:
-                        image_path = await save_uploaded_image(files['image'])
+                    if 'image' in form and hasattr(form['image'], 'filename') and form['image'].filename:
+                        image_path = await save_uploaded_image(form['image'])
                 except Exception as e:
                     logging.error(f"Error handling image upload: {e}")
                 
                 recital_data = {
                     'title': form.get('title'),
                     'artist_name': form.get('artist_name'),
+                    'program': form.get('program'),
                     'description': form.get('description'),
                     'venue': form.get('venue'),
                     'venue_address': form.get('venue_address'),
@@ -1072,9 +1082,8 @@ async def admin_wm(request: Request):
                 # Handle image upload for updates too
                 image_path = None
                 try:
-                    files = await request.form()
-                    if 'image' in files and hasattr(files['image'], 'filename') and files['image'].filename:
-                        image_path = await save_uploaded_image(files['image'])
+                    if 'image' in form and hasattr(form['image'], 'filename') and form['image'].filename:
+                        image_path = await save_uploaded_image(form['image'])
                 except Exception as e:
                     logging.error(f"Error handling image upload during update: {e}")
                 
@@ -1085,6 +1094,7 @@ async def admin_wm(request: Request):
                 recital_data = {
                     'title': form.get('title'),
                     'artist_name': form.get('artist_name'),
+                    'program': form.get('program'),
                     'description': form.get('description'),
                     'venue': form.get('venue'),
                     'venue_address': form.get('venue_address'),
@@ -1094,6 +1104,7 @@ async def admin_wm(request: Request):
                     'slug': form.get('slug'),
                     'image_url': final_image_url
                 }
+                logging.info(f"Update recital data: program='{form.get('program')}', description='{form.get('description')}')")
                 result = update_recital(recital_id, recital_data)
                 message = "Recital updated successfully!" if result else "Failed to update recital"
             

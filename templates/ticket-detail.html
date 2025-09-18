@@ -81,6 +81,47 @@
             font-size: 16px;
             margin-top: 10px;
         }
+
+        /* Markdown content styling */
+        .markdown-content {
+            line-height: 1.6;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1em;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-bottom: 1em;
+            padding-left: 1.5em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .program-section, .biography-section {
+            margin-bottom: 2em;
+        }
+
+        .reception-info {
+            margin-top: 2em;
+            padding-top: 1em;
+            border-top: 1px solid #eee;
+        }
     </style>
 </head>
 <body>
@@ -125,13 +166,28 @@
                         </div>
                         
                         <div class="event-description">
-                            <h3>About This Concert</h3>
-                            {% if recital.description %}
-                                <p>{{ recital.description }}</p>
-                            {% else %}
-                                <p>Join us for an enchanting evening with {{ recital.artist_name }}. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            {% if recital.program %}
+                            <div class="program-section">
+                                <h3>Program</h3>
+                                <div class="markdown-content">{{ recital.program | markdown | safe }}</div>
+                            </div>
                             {% endif %}
-                            <p>All recitals include a "Meet the Artist" reception after the performance, providing an opportunity to personally connect with the artist.</p>
+
+                            {% if recital.description %}
+                            <div class="biography-section">
+                                <h3>Biography</h3>
+                                <div class="markdown-content">{{ recital.description | markdown | safe }}</div>
+                            </div>
+                            {% else %}
+                            <div class="about-section">
+                                <h3>About This Concert</h3>
+                                <p>Join us for an enchanting evening with {{ recital.artist_name }}. This recital is part of our Artist Recital Series, featuring nationally and internationally acclaimed artists performing for the Pittsburgh audience.</p>
+                            </div>
+                            {% endif %}
+
+                            <div class="reception-info">
+                                <p>All recitals include a "Meet the Artist" reception after the performance, providing an opportunity to personally connect with the artist.</p>
+                            </div>
                         </div>
                     </div>
 
