@@ -24,12 +24,15 @@ from .database import (
     get_ticket_types_for_recital, get_ticket_type_by_id,
     create_ticket_type, update_ticket_type, delete_ticket_type,
     create_order, update_order_payment_status, get_order_by_id,
-    get_order_check_in, create_order_check_in, is_order_checked_in
+    get_order_check_in, create_order_check_in, is_order_checked_in,
+    get_articles, get_article_by_id, get_article_by_slug,
+    create_article, update_article, delete_article
 )
 import time
 import secrets
 import shutil
 from pathlib import Path
+import json
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
 import qrcode
@@ -312,11 +315,38 @@ def markdown_filter(text):
         return ""
     return markdown.markdown(text, extensions=['nl2br', 'tables', 'fenced_code'])
 
+# Add JSON filter to Jinja2
+def fromjson_filter(text):
+    """Parse JSON text"""
+    if not text:
+        return []
+    try:
+        import json
+        return json.loads(text)
+    except:
+        return []
+
 templates.env.filters['markdown'] = markdown_filter
+templates.env.filters['fromjson'] = fromjson_filter
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "current_page": "home"})
+    try:
+        # Get published articles for the homepage
+        articles = get_articles(status='published', limit=10)
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "current_page": "home",
+            "articles": articles
+        })
+    except Exception as e:
+        logging.error(f"Error loading articles for homepage: {e}")
+        # Fallback to empty articles list if there's an error
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "current_page": "home",
+            "articles": []
+        })
 
 @app.get("/about", response_class=HTMLResponse)
 async def about(request: Request):
@@ -397,6 +427,28 @@ async def support(request: Request):
 @app.get("/contact", response_class=HTMLResponse)
 async def contact(request: Request):
     return templates.TemplateResponse("contact.html", {"request": request, "current_page": "contact"})
+
+@app.get("/articles/{article_slug}", response_class=HTMLResponse)
+async def article_detail(request: Request, article_slug: str):
+    try:
+        article = get_article_by_slug(article_slug)
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        # Only show published articles
+        if article['status'] != 'published':
+            raise HTTPException(status_code=404, detail="Article not available")
+
+        return templates.TemplateResponse("article-detail.html", {
+            "request": request,
+            "current_page": "articles",
+            "article": article
+        })
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error loading article {article_slug}: {e}")
+        raise HTTPException(status_code=500, detail="Unable to load article")
 
 class TicketItem(BaseModel):
     ticket_type_id: int
@@ -1153,7 +1205,82 @@ async def admin_wm(request: Request):
                 ticket_type_id = int(form.get('ticket_type_id'))
                 result = delete_ticket_type(ticket_type_id)
                 message = "Ticket type deleted successfully!" if result else "Failed to delete ticket type"
-            
+
+            # Redirect back to admin panel
+            response = RedirectResponse(url="/admin/wm", status_code=302)
+            return response
+
+        # Handle article operations
+        elif action in ["create_article", "update_article", "delete_article"] and authenticated:
+            if action == "create_article":
+                # Handle multiple image uploads
+                image_paths = []
+                try:
+                    if 'images' in form:
+                        images = form.getlist('images')
+                        for image in images:
+                            if hasattr(image, 'filename') and image.filename:
+                                image_path = await save_uploaded_image(image)
+                                if image_path:
+                                    image_paths.append(image_path)
+                except Exception as e:
+                    logging.error(f"Error handling image uploads: {e}")
+
+                article_data = {
+                    'title': form.get('title'),
+                    'author': form.get('author'),
+                    'type': form.get('type'),
+                    'tags': form.get('tags'),
+                    'description': form.get('description'),
+                    'content': form.get('content'),
+                    'slug': form.get('slug'),
+                    'status': form.get('status', 'published'),
+                    'images': json.dumps(image_paths) if image_paths else None
+                }
+
+                result = create_article(article_data)
+                message = "Article created successfully!" if result else "Failed to create article"
+
+            elif action == "update_article":
+                article_id = int(form.get('article_id'))
+
+                # Handle image uploads for updates
+                image_paths = []
+                try:
+                    if 'images' in form:
+                        images = form.getlist('images')
+                        for image in images:
+                            if hasattr(image, 'filename') and image.filename:
+                                image_path = await save_uploaded_image(image)
+                                if image_path:
+                                    image_paths.append(image_path)
+                except Exception as e:
+                    logging.error(f"Error handling image uploads during update: {e}")
+
+                # Get current article to preserve existing images if no new ones uploaded
+                current_article = get_article_by_id(article_id)
+                final_images = json.dumps(image_paths) if image_paths else current_article.get('images')
+
+                article_data = {
+                    'title': form.get('title'),
+                    'author': form.get('author'),
+                    'type': form.get('type'),
+                    'tags': form.get('tags'),
+                    'description': form.get('description'),
+                    'content': form.get('content'),
+                    'slug': form.get('slug'),
+                    'status': form.get('status', 'published'),
+                    'images': final_images
+                }
+
+                result = update_article(article_id, article_data)
+                message = "Article updated successfully!" if result else "Failed to update article"
+
+            elif action == "delete_article":
+                article_id = int(form.get('article_id'))
+                result = delete_article(article_id)
+                message = "Article deleted successfully!" if result else "Failed to delete article"
+
             # Redirect back to admin panel
             response = RedirectResponse(url="/admin/wm", status_code=302)
             return response
@@ -1184,12 +1311,15 @@ async def admin_wm(request: Request):
         # Get recital data for Edit Items tab
         include_past = request.query_params.get("include_past") == "true"
         recitals = get_recitals(include_past=include_past)
-        
+
         # Get ticket types for all recitals
         all_ticket_types = []
         for recital in recitals:
             ticket_types = get_ticket_types_for_recital(recital['id'])
             all_ticket_types.extend(ticket_types)
+
+        # Get articles for Articles tab
+        articles = get_articles()
         
         template_data = {
             "request": request,
@@ -1198,6 +1328,7 @@ async def admin_wm(request: Request):
             "table_data": table_data,
             "recitals": recitals,
             "all_ticket_types": all_ticket_types,
+            "articles": articles,
             "include_past": include_past
         }
         
@@ -1244,15 +1375,33 @@ async def get_ticket_type(ticket_type_id: int, request: Request):
     session_id = request.cookies.get("admin_session", "")
     if not is_admin_authenticated(session_id):
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
     try:
         ticket_type = get_ticket_type_by_id(ticket_type_id)
         if not ticket_type:
             raise HTTPException(status_code=404, detail="Ticket type not found")
-        
+
         return JSONResponse(content=ticket_type)
     except Exception as e:
         logging.error(f"Error fetching ticket type {ticket_type_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/article/{article_id}")
+async def get_article(article_id: int, request: Request):
+    """API endpoint to fetch article data for editing"""
+    # Check admin authentication using custom session system
+    session_id = request.cookies.get("admin_session", "")
+    if not is_admin_authenticated(session_id):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        article = get_article_by_id(article_id)
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+
+        return JSONResponse(content=article)
+    except Exception as e:
+        logging.error(f"Error fetching article {article_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/order/{order_id}", response_class=HTMLResponse)

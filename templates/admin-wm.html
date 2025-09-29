@@ -411,6 +411,7 @@
                 {% endfor %}
                 <button class="tab-btn" onclick="showTab('custom_query')">Custom Query</button>
                 <button class="tab-btn" onclick="showTab('edit_items')">Edit Items</button>
+                <button class="tab-btn" onclick="showTab('manage_articles')">Manage Articles</button>
             </div>
             
             {% for table in tables %}
@@ -627,9 +628,71 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Articles Management Tab -->
+            <div class="tab-content" id="manage_articles">
+                <h3>Articles Management</h3>
+
+                <div class="admin-actions" style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="showArticleModal()">
+                        <i class="fas fa-plus"></i> Add New Article
+                    </button>
+                </div>
+
+                {% if articles is defined and articles %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in articles %}
+                            <tr>
+                                <td>{{ article.id }}</td>
+                                <td>{{ article.title }}</td>
+                                <td>{{ article.author }}</td>
+                                <td><span class="status-badge status-{{ article.type }}">{{ article.type|title }}</span></td>
+                                <td><span class="status-badge status-{{ article.status }}">{{ article.status|title }}</span></td>
+                                <td>{{ article.created_at[:10] if article.created_at else 'N/A' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" onclick="editArticle({{ article.id }})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="/articles/{{ article.slug }}" target="_blank" class="btn btn-sm btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteArticle({{ article.id }}, '{{ article.title }}')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #666;">No articles found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <i class="fas fa-newspaper" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                    <p style="font-size: 18px; margin-bottom: 8px;">No articles found</p>
+                    <p style="font-size: 14px;">Click "Add New Article" to create your first article.</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
-    
+
     <!-- Reset Password Modal -->
     <div id="resetModal" class="modal">
         <div class="modal-content">
@@ -801,8 +864,88 @@
             </form>
         </div>
     </div>
+
+    <!-- Article Modal -->
+    <div id="articleModal" class="modal">
+        <div class="modal-content" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="hideArticleModal()">&times;</span>
+            <h3 id="articleModalTitle">Add New Article</h3>
+            <form method="POST" id="articleForm" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="create_article" id="article_action">
+                <input type="hidden" name="article_id" id="article_id">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="a_title">Title *</label>
+                        <input type="text" id="a_title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="a_author">Author *</label>
+                        <input type="text" id="a_author" name="author" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="a_type">Type *</label>
+                        <select id="a_type" name="type" required>
+                            <option value="">Select type...</option>
+                            <option value="featured article">Featured Article</option>
+                            <option value="announcement">Announcement</option>
+                            <option value="competition winner">Competition Winner</option>
+                            <option value="news">News</option>
+                            <option value="interview">Interview</option>
+                            <option value="review">Review</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="a_status">Status *</label>
+                        <select id="a_status" name="status" required>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="a_description">Description *</label>
+                    <textarea id="a_description" name="description" rows="3" required style="width: 100%; resize: vertical;"></textarea>
+                    <small>Brief summary that appears on the homepage</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="a_content">Content (Markdown)</label>
+                    <textarea id="a_content" name="content" rows="10" style="width: 100%; resize: vertical; font-family: monospace;"></textarea>
+                    <small>Full article content in Markdown format</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="a_tags">Tags (JSON format)</label>
+                    <input type="text" id="a_tags" name="tags" placeholder='["tag1", "tag2"]'>
+                    <small>Tags in JSON array format, e.g., ["music", "interview"]</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="a_slug">URL Slug *</label>
+                    <input type="text" id="a_slug" name="slug" required>
+                    <small>URL-friendly version of title (auto-generated from title)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="a_images">Images</label>
+                    <input type="file" id="a_images" name="images" multiple accept="image/*">
+                    <small>Select multiple images for this article</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" id="articleSubmitBtn" class="btn btn-primary">Create Article</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideArticleModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
     {% endif %}
-    
+
     <script>
         function showTab(tabName) {
             // Hide all tab contents
@@ -1078,6 +1221,81 @@
                 e.preventDefault();
                 resendEmails();
             }
+        });
+
+        // Article management functions
+        function showArticleModal(articleId = null) {
+            const modal = document.getElementById('articleModal');
+            const title = document.getElementById('articleModalTitle');
+            const form = document.getElementById('articleForm');
+            const submitBtn = document.getElementById('articleSubmitBtn');
+            const action = document.getElementById('article_action');
+
+            if (articleId) {
+                // Edit mode - fetch article data
+                fetch(`/api/article/${articleId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        title.textContent = 'Edit Article';
+                        submitBtn.textContent = 'Update Article';
+                        action.value = 'update_article';
+                        document.getElementById('article_id').value = articleId;
+
+                        // Populate form fields
+                        document.getElementById('a_title').value = data.title || '';
+                        document.getElementById('a_author').value = data.author || '';
+                        document.getElementById('a_type').value = data.type || '';
+                        document.getElementById('a_status').value = data.status || 'published';
+                        document.getElementById('a_description').value = data.description || '';
+                        document.getElementById('a_content').value = data.content || '';
+                        document.getElementById('a_tags').value = data.tags || '';
+                        document.getElementById('a_slug').value = data.slug || '';
+                    })
+                    .catch(error => {
+                        console.error('Error fetching article data:', error);
+                        alert('Error loading article data');
+                    });
+            } else {
+                // Create mode
+                title.textContent = 'Add New Article';
+                submitBtn.textContent = 'Create Article';
+                action.value = 'create_article';
+                form.reset();
+                document.getElementById('article_id').value = '';
+            }
+
+            modal.style.display = 'block';
+        }
+
+        function hideArticleModal() {
+            document.getElementById('articleModal').style.display = 'none';
+        }
+
+        function editArticle(articleId) {
+            showArticleModal(articleId);
+        }
+
+        function deleteArticle(articleId, title) {
+            if (confirm(`Are you sure you want to delete article "${title}"?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_article">
+                    <input type="hidden" name="article_id" value="${articleId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Auto-generate slug from title
+        document.getElementById('a_title').addEventListener('input', function() {
+            const title = this.value;
+            const slug = title
+                .toLowerCase()
+                .replace(/[^\w ]+/g, '')
+                .replace(/ +/g, '-');
+            document.getElementById('a_slug').value = slug;
         });
     </script>
 </body>

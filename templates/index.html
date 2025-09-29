@@ -63,26 +63,58 @@
     <section class="section section-alt">
         <div class="container">
             <h2 style="text-align: center; margin-bottom: 3rem;">Latest News & Highlights</h2>
-            
+
+            {% if articles and articles|length > 0 %}
+            <div class="articles-carousel-container">
+                {% if articles|length > 3 %}
+                <button class="carousel-nav carousel-nav-left" onclick="slideArticles(-1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                {% endif %}
+
+                <div class="articles-carousel" id="articles-carousel">
+                    {% for article in articles %}
+                    <article class="card article-card" data-index="{{ loop.index0 }}">
+                        <div class="card-meta">{{ article.type|title }}</div>
+                        <h3 class="card-title">
+                            <a href="/articles/{{ article.slug }}">{{ article.title }}</a>
+                        </h3>
+                        <p>{{ article.description }}</p>
+                        {% if article.author %}
+                        <div class="article-author">By {{ article.author }}</div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </div>
+
+                {% if articles|length > 3 %}
+                <button class="carousel-nav carousel-nav-right" onclick="slideArticles(1)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                {% endif %}
+            </div>
+            {% else %}
+            <!-- Fallback content when no articles are available -->
             <div class="grid grid-3">
                 <article class="card">
                     <div class="card-meta">Featured Article</div>
                     <h3 class="card-title">The Ballade of Piano and Chess</h3>
                     <p>Explore the fascinating connection between chess and classical music in this insightful piece by Evan Park, featuring an interview with pianist and WCHOF Director Brian Woods.</p>
                 </article>
-                
+
                 <article class="card">
                     <div class="card-meta">Announcement</div>
                     <h3 class="card-title">Board of Directors Recruitment</h3>
                     <p>We're seeking passionate individuals with appreciation for classical piano, leadership skills, and nonprofit experience to join our board and help guide our mission forward.</p>
                 </article>
-                
+
                 <article class="card">
                     <div class="card-meta">Competition Winner</div>
                     <h3 class="card-title">Youth Piano Concerto Competition</h3>
                     <p>Congratulations to Leona Chen, winner of our youth competition, who performed Mozart's Piano Concerto No. 20 on September 9, 2023.</p>
                 </article>
             </div>
+            {% endif %}
         </div>
     </section>
 
@@ -92,5 +124,154 @@
     {% include 'footer.html' %}
 
     <script src="/static/js/main.js"></script>
+
+    <style>
+        .articles-carousel-container {
+            position: relative;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .articles-carousel {
+            display: flex;
+            gap: 2rem;
+            transition: transform 0.3s ease;
+            will-change: transform;
+        }
+
+        .article-card {
+            flex: 0 0 calc(33.333% - 1.333rem);
+            min-width: 300px;
+        }
+
+        .article-card .card-title a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .article-card .card-title a:hover {
+            color: var(--primary);
+        }
+
+        .article-author {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-elegant);
+            z-index: 10;
+        }
+
+        .carousel-nav:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .carousel-nav-left {
+            left: -24px;
+        }
+
+        .carousel-nav-right {
+            right: -24px;
+        }
+
+        @media (max-width: 768px) {
+            .article-card {
+                flex: 0 0 calc(50% - 1rem);
+                min-width: 250px;
+            }
+
+            .carousel-nav-left {
+                left: -20px;
+            }
+
+            .carousel-nav-right {
+                right: -20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .article-card {
+                flex: 0 0 calc(100% - 2rem);
+                min-width: 280px;
+            }
+        }
+    </style>
+
+    <script>
+        let currentSlide = 0;
+        const maxVisibleCards = 3;
+
+        function slideArticles(direction) {
+            const carousel = document.getElementById('articles-carousel');
+            const articles = carousel.querySelectorAll('.article-card');
+            const totalArticles = articles.length;
+
+            if (totalArticles <= maxVisibleCards) {
+                return; // No need to slide if all cards are visible
+            }
+
+            const maxSlide = Math.max(0, totalArticles - maxVisibleCards);
+
+            currentSlide += direction;
+
+            // Loop around if needed
+            if (currentSlide < 0) {
+                currentSlide = maxSlide;
+            } else if (currentSlide > maxSlide) {
+                currentSlide = 0;
+            }
+
+            // Calculate the translation percentage
+            // Each card is 33.333% width + gap, so we move by that amount
+            const cardWidth = 100 / maxVisibleCards; // 33.333% for 3 cards
+            const translateX = -(currentSlide * cardWidth);
+
+            carousel.style.transform = `translateX(${translateX}%)`;
+        }
+
+        // Auto-slide functionality (optional)
+        function startAutoSlide() {
+            const carousel = document.getElementById('articles-carousel');
+            if (!carousel) return;
+
+            const articles = carousel.querySelectorAll('.article-card');
+            if (articles.length <= maxVisibleCards) return;
+
+            setInterval(() => {
+                slideArticles(1);
+            }, 5000); // Slide every 5 seconds
+        }
+
+        // Initialize carousel when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only start auto-slide if there are more than 3 articles
+            const carousel = document.getElementById('articles-carousel');
+            if (carousel) {
+                const articles = carousel.querySelectorAll('.article-card');
+                if (articles.length > maxVisibleCards) {
+                    startAutoSlide();
+                }
+            }
+        });
+    </script>
 </body>
 </html>
