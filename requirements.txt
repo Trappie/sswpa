@@ -8,3 +8,4 @@ pydantic==2.9.2
 squareup==43.0.2.20250820
 python-dotenv==1.0.1
 qrcode[pil]==8.0
+markdown==3.7
