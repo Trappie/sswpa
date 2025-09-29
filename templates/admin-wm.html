@@ -263,6 +263,28 @@
             top: 0;
         }
 
+        /* Ticket Type Modal Styles */
+        #ticketTypeModal .modal-content {
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            margin: 2% auto;
+            overflow-y: auto;
+            position: relative;
+            top: 0;
+        }
+
+        /* Recital Modal Styles */
+        #recitalModal .modal-content {
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            margin: 2% auto;
+            overflow-y: auto;
+            position: relative;
+            top: 0;
+        }
+
         .form-row {
             display: flex;
             gap: 1rem;
@@ -831,7 +853,7 @@
     
     <!-- Recital Modal -->
     <div id="recitalModal" class="modal">
-        <div class="modal-content" style="width: 600px;">
+        <div class="modal-content">
             <span class="close" onclick="hideRecitalModal()">&times;</span>
             <h3 id="recitalModalTitle">Add New Recital</h3>
             <div id="recitalAutoTicketNotice" style="background: #e8f5e8; border: 1px solid #4caf50; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 14px;">
@@ -916,7 +938,7 @@
     
     <!-- Ticket Type Modal -->
     <div id="ticketTypeModal" class="modal">
-        <div class="modal-content" style="width: 500px;">
+        <div class="modal-content">
             <span class="close" onclick="hideTicketTypeModal()">&times;</span>
             <h3 id="ticketTypeModalTitle">Add New Ticket Type</h3>
             <form method="POST" id="ticketTypeForm">
