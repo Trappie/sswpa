@@ -251,7 +251,118 @@
         .close:hover {
             color: black;
         }
-        
+
+        /* Article Modal Styles */
+        #articleModal .modal-content {
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            margin: 2% auto;
+            overflow-y: auto;
+            position: relative;
+            top: 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+            margin-top: 1.5rem;
+        }
+
+        /* Status badge styles */
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.status-published {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.status-featured-article {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .status-badge.status-announcement {
+            background-color: #e2e3e5;
+            color: #41464b;
+        }
+
+        .status-badge.status-competition-winner {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Button alignment fixes */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            margin: 0 0.25rem;
+            white-space: nowrap;
+            min-width: auto;
+        }
+
+        /* Actions column specific styling */
+        .actions-column {
+            white-space: nowrap;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-buttons .btn {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            min-width: 32px;
+            height: 32px;
+        }
+
+        /* Override any conflicting styles */
+        .btn.btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
         /* Edit Items Styles */
         .btn-small {
             padding: 5px 10px;
@@ -662,16 +773,18 @@
                                 <td><span class="status-badge status-{{ article.type }}">{{ article.type|title }}</span></td>
                                 <td><span class="status-badge status-{{ article.status }}">{{ article.status|title }}</span></td>
                                 <td>{{ article.created_at[:10] if article.created_at else 'N/A' }}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-secondary" onclick="editArticle({{ article.id }})" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <a href="/articles/{{ article.slug }}" target="_blank" class="btn btn-sm btn-info" title="View">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteArticle({{ article.id }}, '{{ article.title }}')" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <td class="actions-column">
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-secondary" onclick="editArticle({{ article.id }})" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <a href="/articles/{{ article.slug }}" target="_blank" class="btn btn-sm btn-info" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteArticle({{ article.id }}, '{{ article.title }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             {% else %}
@@ -867,7 +980,7 @@
 
     <!-- Article Modal -->
     <div id="articleModal" class="modal">
-        <div class="modal-content" style="width: 800px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-content">
             <span class="close" onclick="hideArticleModal()">&times;</span>
             <h3 id="articleModalTitle">Add New Article</h3>
             <form method="POST" id="articleForm" enctype="multipart/form-data">
