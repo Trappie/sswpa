@@ -145,6 +145,24 @@ def create_recital_schema():
                 )
             """)
 
+            # Articles table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS articles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    author TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    tags TEXT,
+                    description TEXT NOT NULL,
+                    content TEXT,
+                    slug TEXT UNIQUE NOT NULL,
+                    status TEXT DEFAULT 'published',
+                    images TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
             # Add program column if it doesn't exist (for existing databases)
             try:
                 cursor.execute("ALTER TABLE recitals ADD COLUMN program TEXT")
@@ -169,6 +187,7 @@ def check_required_tables() -> dict:
         'order_items': False,
         'order_check_ins': False,
         'donations': False,
+        'articles': False,
         'passwords': False,
         'test_data': False
     }
@@ -687,3 +706,94 @@ def is_order_checked_in(order_id: int) -> bool:
     """Check if an order has been checked in"""
     check_in = get_order_check_in(order_id)
     return check_in is not None
+
+# Article CRUD operations
+def get_articles(status: str = None, limit: int = None) -> list:
+    """Get articles, optionally filtered by status"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        if status:
+            query = "SELECT * FROM articles WHERE status = ? ORDER BY created_at DESC"
+            params = (status,)
+        else:
+            query = "SELECT * FROM articles ORDER BY created_at DESC"
+            params = ()
+
+        if limit:
+            query += " LIMIT ?"
+            params = params + (limit,)
+
+        cursor.execute(query, params)
+        return [dict(row) for row in cursor.fetchall()]
+
+def get_article_by_id(article_id: int) -> dict:
+    """Get a single article by ID"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM articles WHERE id = ?", (article_id,))
+        result = cursor.fetchone()
+        return dict(result) if result else None
+
+def get_article_by_slug(slug: str) -> dict:
+    """Get a single article by slug"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM articles WHERE slug = ?", (slug,))
+        result = cursor.fetchone()
+        return dict(result) if result else None
+
+def create_article(article_data: dict) -> int:
+    """Create a new article"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO articles (
+                    title, author, type, tags, description, content, slug, status, images
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                article_data['title'], article_data['author'], article_data['type'],
+                article_data.get('tags'), article_data['description'], article_data.get('content'),
+                article_data['slug'], article_data.get('status', 'published'),
+                article_data.get('images')
+            ))
+            conn.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        logging.error(f"Failed to create article: {e}")
+        return None
+
+def update_article(article_id: int, article_data: dict) -> bool:
+    """Update an existing article"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE articles SET
+                    title = ?, author = ?, type = ?, tags = ?, description = ?,
+                    content = ?, slug = ?, status = ?, images = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (
+                article_data['title'], article_data['author'], article_data['type'],
+                article_data.get('tags'), article_data['description'], article_data.get('content'),
+                article_data['slug'], article_data.get('status', 'published'),
+                article_data.get('images'), article_id
+            ))
+            conn.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        logging.error(f"Failed to update article: {e}")
+        return False
+
+def delete_article(article_id: int) -> bool:
+    """Delete an article"""
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM articles WHERE id = ?", (article_id,))
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.error(f"Failed to delete article: {e}")
+        return False

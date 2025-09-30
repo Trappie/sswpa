@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} | Steinway Society of Western Pennsylvania</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .article-detail-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            max-width: 1200px;
+            margin: 0 auto 2rem auto;
+        }
+
+        @media (min-width: 768px) {
+            .article-detail-layout {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .article-content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-elegant);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .article-sidebar {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-elegant);
+            padding: 2rem;
+            height: fit-content;
+        }
+
+        .article-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .article-meta {
+            flex: 1;
+        }
+
+        .article-meta h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            line-height: 1.2;
+        }
+
+        .article-type {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: capitalize;
+            margin-bottom: 1rem;
+        }
+
+        .article-author {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .article-date {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .article-description {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .article-images {
+            margin: 2rem 0;
+        }
+
+        .article-image {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .markdown-content {
+            line-height: 1.6;
+            font-size: 1.1rem;
+            max-width: 800px;
+        }
+
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            margin-top: 2em;
+            margin-bottom: 1em;
+            color: var(--primary);
+        }
+
+        .markdown-content h1 {
+            font-size: 2rem;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5rem;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25rem;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1.5em;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+            margin-bottom: 1.5em;
+            padding-left: 2em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid var(--secondary);
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .back-to-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-to-home:hover {
+            color: var(--secondary);
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .sidebar-section h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .related-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .related-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .related-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .related-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Image Gallery Styles */
+        .image-gallery-section {
+            margin: 2rem 0;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .image-gallery-section h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .image-gallery-container {
+            position: relative;
+            overflow: hidden;
+            padding: 0 60px; /* Space for navigation buttons */
+        }
+
+        .image-gallery {
+            display: flex;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+            will-change: transform;
+        }
+
+        .gallery-image-item {
+            position: relative;
+            flex: 0 0 calc(45% - 0.5rem); /* Show part of next image */
+            max-width: 350px;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .gallery-image-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-image-item:hover .gallery-image {
+            transform: scale(1.05);
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none; /* Allow clicks to pass through */
+        }
+
+        .gallery-image-item:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-overlay i {
+            color: white;
+            font-size: 2rem;
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .gallery-nav:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .gallery-nav.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .gallery-nav.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .gallery-nav-left {
+            left: 10px;
+        }
+
+        .gallery-nav-right {
+            right: 10px;
+        }
+
+        /* Gallery Pagination Dots */
+        .gallery-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 0 20px;
+        }
+
+        .pagination-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            border: 2px solid transparent;
+        }
+
+        .pagination-dot:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+            transform: scale(1.1);
+        }
+
+        .pagination-dot.active {
+            background-color: #007bff;
+        }
+
+        /* Show pagination only on mobile */
+        @media (min-width: 769px) {
+            .gallery-pagination {
+                display: none;
+            }
+        }
+
+        /* Image Zoom Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .image-modal-content {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .modal-image {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 2001;
+            transition: color 0.3s ease;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-nav:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-nav-left {
+            left: 20px;
+        }
+
+        .modal-nav-right {
+            right: 20px;
+        }
+
+        /* Modal pagination dots */
+        .modal-pagination {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 12px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-dot:hover {
+            background-color: rgba(255, 255, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        .modal-dot.active {
+            background-color: white;
+            transform: scale(1.2);
+        }
+
+        .modal-counter {
+            color: white;
+            font-size: 0.9rem;
+            margin-left: 12px;
+            font-weight: 500;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .image-modal {
+                background-color: rgba(0, 0, 0, 1); /* Full black for mobile */
+            }
+
+            .modal-image {
+                max-width: 100%;
+                max-height: 85vh;
+            }
+
+            .modal-close {
+                top: 15px;
+                right: 15px;
+                font-size: 24px;
+                width: 40px;
+                height: 40px;
+            }
+
+            .modal-nav {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .modal-nav-left {
+                left: 15px;
+            }
+
+            .modal-nav-right {
+                right: 15px;
+            }
+
+            .modal-pagination {
+                bottom: 20px;
+                padding: 10px 16px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .image-gallery-container {
+                padding: 0 50px;
+            }
+
+            .gallery-image-item {
+                flex: 0 0 100%; /* Mobile: full width, no partial next image */
+                max-width: none;
+            }
+
+            .gallery-nav-left {
+                left: 8px;
+            }
+
+            .gallery-nav-right {
+                right: 8px;
+            }
+
+            .modal-nav {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .image-gallery-container {
+                padding: 0 45px;
+            }
+
+            .gallery-image-item {
+                flex: 0 0 100%;
+                max-width: none;
+            }
+
+            .gallery-image {
+                height: 200px;
+            }
+
+            .gallery-nav-left {
+                left: 5px;
+            }
+
+            .gallery-nav-right {
+                right: 5px;
+            }
+
+            .gallery-nav {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'nav.html' %}
+
+    <main class="main-content">
+        <!-- Page Header -->
+        <section class="page-header">
+            <div class="container">
+                <a href="/" class="back-to-home">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Home
+                </a>
+                <h1>Article</h1>
+            </div>
+        </section>
+
+        <!-- Article Content -->
+        <section class="section">
+            <div class="container">
+                <div class="article-detail-layout">
+                    <!-- Main Content -->
+                    <div class="article-content-card">
+                        <div class="article-header">
+                            <div class="article-meta">
+                                <div class="article-type">{{ article.type }}</div>
+                                <h1>{{ article.title }}</h1>
+                                <div class="article-author">By {{ article.author }}</div>
+                                {% if article.created_at %}
+                                <div class="article-date">Published {{ article.created_at[:10] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Article Content -->
+                        {% if article.content %}
+                        <div class="markdown-content">
+                            {{ article.content | markdown | safe }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Article Images Gallery -->
+                        {% if article.images %}
+                        {% set images = article.images | fromjson %}
+                        {% if images %}
+                        <div class="image-gallery-section">
+                            <h3>Images</h3>
+                            <div class="image-gallery-container">
+                                {% if images|length > 1 %}
+                                <button class="gallery-nav gallery-nav-left" onclick="slideGallery(-1)">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                {% endif %}
+
+                                <div class="image-gallery" id="image-gallery">
+                                    {% for image_path in images %}
+                                    <div class="gallery-image-item" data-index="{{ loop.index0 }}">
+                                        <img src="{{ image_path }}" alt="Article image {{ loop.index }}" class="gallery-image" onclick="openImageModal({{ loop.index0 }})">
+                                        <div class="image-overlay">
+                                            <i class="fas fa-search-plus"></i>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% if images|length > 1 %}
+                                <button class="gallery-nav gallery-nav-right" onclick="slideGallery(1)">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                {% endif %}
+
+                                <!-- Mobile pagination dots -->
+                                <div class="gallery-pagination" id="gallery-pagination">
+                                    {% for image_path in images %}
+                                    <span class="pagination-dot" data-index="{{ loop.index0 }}" onclick="goToSlide({{ loop.index0 }})"></span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="article-sidebar">
+                        <div class="sidebar-section">
+                            <h3>Quick Links</h3>
+                            <ul class="related-links">
+                                <li><a href="/tickets">Upcoming Concerts</a></li>
+                                <li><a href="/young-artists/about">Young Artists Program</a></li>
+                                <li><a href="/membership">Become a Member</a></li>
+                                <li><a href="/support">Support SSWPA</a></li>
+                                <li><a href="/contact">Contact Us</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <h3>About SSWPA</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                The Steinway Society of Western Pennsylvania promotes classical piano music through concerts, auditions, and educational programs.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <!-- Image Zoom Modal -->
+    <div id="imageModal" class="image-modal">
+        <div class="image-modal-content">
+            <span class="modal-close" onclick="closeImageModal()">&times;</span>
+            <img id="modalImage" class="modal-image" src="" alt="Zoomed image">
+
+            {% if article.images %}
+            {% set images = article.images | fromjson %}
+            {% if images|length > 1 %}
+            <button class="modal-nav modal-nav-left" onclick="navigateModal(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="modal-nav modal-nav-right" onclick="navigateModal(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            {% endif %}
+
+            <!-- Modal pagination with dots and counter -->
+            <div class="modal-pagination" id="modalPagination">
+                {% for image_path in images %}
+                <span class="modal-dot" data-index="{{ loop.index0 }}" onclick="goToModalSlide({{ loop.index0 }})"></span>
+                {% endfor %}
+                {% if images|length > 1 %}
+                <span class="modal-counter" id="modalCounter">1 / {{ images|length }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+
+    <script>
+        // Article images data
+        const articleImages = [
+            {% if article.images %}
+            {% set images = article.images | fromjson %}
+            {% for image_path in images %}
+            "{{ image_path }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+            {% endif %}
+        ];
+
+        // Debug: Check if images are loaded
+        console.log('Article images loaded:', articleImages);
+
+        let currentGallerySlide = 0;
+        let currentModalImage = 0;
+
+        // Dynamic maxVisibleImages based on screen size
+        function getMaxVisibleImages() {
+            if (window.innerWidth <= 768) {
+                return 1; // Mobile: show 1 image
+            }
+            return 2; // Desktop: show 2 images
+        }
+
+        // Update navigation button states
+        function updateNavButtons() {
+            const totalImages = articleImages.length;
+            const leftBtn = document.querySelector('.gallery-nav-left');
+            const rightBtn = document.querySelector('.gallery-nav-right');
+
+            if (!leftBtn || !rightBtn || totalImages <= 1) return;
+
+            const maxSlide = totalImages - 1;
+
+            // Update left button
+            if (currentGallerySlide === 0) {
+                leftBtn.classList.add('disabled');
+                leftBtn.classList.remove('active');
+            } else {
+                leftBtn.classList.remove('disabled');
+                leftBtn.classList.add('active');
+            }
+
+            // Update right button
+            if (currentGallerySlide === maxSlide) {
+                rightBtn.classList.add('disabled');
+                rightBtn.classList.remove('active');
+            } else {
+                rightBtn.classList.remove('disabled');
+                rightBtn.classList.add('active');
+            }
+        }
+
+        // Update pagination dots
+        function updatePaginationDots() {
+            const dots = document.querySelectorAll('.pagination-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentGallerySlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // Go to specific slide
+        function goToSlide(slideIndex) {
+            const totalImages = articleImages.length;
+            if (slideIndex >= 0 && slideIndex < totalImages) {
+                currentGallerySlide = slideIndex;
+
+                // Apply the same translation logic as slideGallery
+                const gallery = document.getElementById('image-gallery');
+                const container = gallery.parentElement;
+                const firstItem = gallery.querySelector('.gallery-image-item');
+                const isMobile = window.innerWidth <= 768;
+
+                if (firstItem) {
+                    const itemWidth = firstItem.offsetWidth;
+                    const gap = 16;
+                    let translateX;
+
+                    if (isMobile) {
+                        translateX = -(currentGallerySlide * (itemWidth + gap));
+                    } else {
+                        const scrollDistance = itemWidth * 0.8;
+                        const maxSlide = totalImages - 1;
+
+                        if (currentGallerySlide === maxSlide) {
+                            const containerInnerWidth = container.clientWidth - 120;
+                            const totalWidth = totalImages * itemWidth + (totalImages - 1) * gap;
+                            const maxTranslate = totalWidth - containerInnerWidth;
+                            translateX = -Math.max(0, maxTranslate);
+                        } else {
+                            translateX = -(currentGallerySlide * scrollDistance);
+                        }
+                    }
+
+                    gallery.style.transform = `translateX(${translateX}px)`;
+                }
+
+                // Update UI
+                updateNavButtons();
+                updatePaginationDots();
+            }
+        }
+
+        // Gallery navigation
+        function slideGallery(direction) {
+            const gallery = document.getElementById('image-gallery');
+            const container = gallery.parentElement;
+            const totalImages = articleImages.length;
+            const isMobile = window.innerWidth <= 768;
+
+            if (totalImages <= 1) {
+                return; // No scrolling needed
+            }
+
+            // Simple approach: scroll one image at a time
+            const nextSlide = currentGallerySlide + direction;
+
+            // Calculate max slide position
+            let maxSlide;
+            if (isMobile) {
+                maxSlide = totalImages - 1; // Mobile: show each image individually
+            } else {
+                maxSlide = totalImages - 1; // Desktop: also scroll one by one but with partial visibility
+            }
+
+            // Handle wrapping
+            if (nextSlide < 0) {
+                currentGallerySlide = maxSlide;
+            } else if (nextSlide > maxSlide) {
+                currentGallerySlide = 0;
+            } else {
+                currentGallerySlide = nextSlide;
+            }
+
+            // Calculate translation
+            const firstItem = gallery.querySelector('.gallery-image-item');
+            if (firstItem) {
+                const itemWidth = firstItem.offsetWidth;
+                const gap = 16;
+
+                let translateX;
+
+                if (isMobile) {
+                    // Mobile: scroll by full width + gap
+                    translateX = -(currentGallerySlide * (itemWidth + gap));
+                } else {
+                    // Desktop: scroll by 80% of width to maintain partial visibility
+                    const scrollDistance = itemWidth * 0.8;
+
+                    // For the last position, ensure the last image is fully visible
+                    if (currentGallerySlide === maxSlide) {
+                        // Simple approach: calculate how much to show the last image fully
+                        // We want: last image right edge = container right edge (minus padding)
+                        const containerInnerWidth = container.clientWidth - 120; // Subtract left+right padding
+                        const totalWidth = totalImages * itemWidth + (totalImages - 1) * gap;
+                        const maxTranslate = totalWidth - containerInnerWidth;
+                        translateX = -Math.max(0, maxTranslate);
+
+                        console.log('Last position calc:', {
+                            containerClientWidth: container.clientWidth,
+                            containerInnerWidth,
+                            totalWidth,
+                            maxTranslate,
+                            translateX
+                        });
+                    } else {
+                        translateX = -(currentGallerySlide * scrollDistance);
+                    }
+                }
+
+                gallery.style.transform = `translateX(${translateX}px)`;
+
+                // Update UI after movement
+                updateNavButtons();
+                updatePaginationDots();
+            }
+        }
+
+        // Update modal pagination dots
+        function updateModalDots() {
+            const dots = document.querySelectorAll('.modal-dot');
+            dots.forEach((dot, index) => {
+                if (index === currentModalImage) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // Go to specific modal slide
+        function goToModalSlide(index) {
+            currentModalImage = index;
+            const modalImage = document.getElementById('modalImage');
+            const modalCounter = document.getElementById('modalCounter');
+
+            modalImage.src = articleImages[index];
+
+            if (modalCounter) {
+                modalCounter.textContent = `${index + 1} / ${articleImages.length}`;
+            }
+
+            updateModalDots();
+        }
+
+        // Modal functions
+        function openImageModal(index) {
+            console.log('openImageModal called with index:', index);
+            console.log('articleImages array:', articleImages);
+            console.log('articleImages length:', articleImages.length);
+
+            currentModalImage = index;
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalCounter = document.getElementById('modalCounter');
+
+            console.log('Modal element found:', !!modal);
+            console.log('Modal image element found:', !!modalImage);
+
+            if (!articleImages[index]) {
+                console.error('Image not found at index:', index, 'Available images:', articleImages);
+                return;
+            }
+
+            modalImage.src = articleImages[index];
+            console.log('Setting modal image src to:', articleImages[index]);
+
+            if (modalCounter) {
+                modalCounter.textContent = `${index + 1} / ${articleImages.length}`;
+            }
+
+            updateModalDots();
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            console.log('Modal should now be visible');
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function navigateModal(direction) {
+            currentModalImage += direction;
+
+            if (currentModalImage < 0) {
+                currentModalImage = articleImages.length - 1;
+            } else if (currentModalImage >= articleImages.length) {
+                currentModalImage = 0;
+            }
+
+            const modalImage = document.getElementById('modalImage');
+            const modalCounter = document.getElementById('modalCounter');
+
+            modalImage.src = articleImages[currentModalImage];
+
+            if (modalCounter) {
+                modalCounter.textContent = `${currentModalImage + 1} / ${articleImages.length}`;
+            }
+
+            updateModalDots();
+        }
+
+        // Keyboard navigation for modal
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('imageModal');
+            if (modal.style.display === 'block') {
+                if (event.key === 'Escape') {
+                    closeImageModal();
+                } else if (event.key === 'ArrowLeft') {
+                    navigateModal(-1);
+                } else if (event.key === 'ArrowRight') {
+                    navigateModal(1);
+                }
+            }
+        });
+
+        // Close modal when clicking outside the image
+        document.getElementById('imageModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // Reset gallery on window resize
+        window.addEventListener('resize', function() {
+            currentGallerySlide = 0;
+            const gallery = document.getElementById('image-gallery');
+            if (gallery) {
+                gallery.style.transform = 'translateX(0px)';
+                updateNavButtons();
+            }
+        });
+
+        // Initialize button states when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNavButtons();
+            updatePaginationDots();
+
+            // Add click event listeners to gallery image containers
+            const galleryItems = document.querySelectorAll('.gallery-image-item');
+            console.log('Found gallery image items:', galleryItems.length);
+
+            galleryItems.forEach((item, index) => {
+                console.log(`Adding click listener to item ${index}`);
+                item.style.cursor = 'pointer'; // Make sure cursor shows it's clickable
+
+                // Add click event to the container
+                item.addEventListener('click', function(e) {
+                    console.log(`Gallery item ${index} clicked!`);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openImageModal(index);
+                });
+
+                item.addEventListener('mousedown', function(e) {
+                    console.log(`Gallery item ${index} mousedown!`);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
