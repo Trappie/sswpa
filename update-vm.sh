@@ -17,7 +17,7 @@ CONTAINER_NAME="sswpa-web"
 echo "🔄 Updating SSWPA container on VM: ${VM_NAME}"
 
 # Execute update commands on the VM
-gcloud compute ssh ${VM_NAME} --zone=${VM_ZONE} --command="
+gcloud compute ssh wu_di_network@${VM_NAME} --zone=${VM_ZONE} --command="
 echo '🔐 Configuring Docker authentication...' &&
 sudo mkdir -p /tmp/.docker &&
 ACCESS_TOKEN=\$(curl -s 'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' -H 'Metadata-Flavor: Google' | cut -d'\"' -f4) &&
