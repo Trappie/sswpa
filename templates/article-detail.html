@@ -196,6 +196,64 @@
             color: var(--primary);
         }
 
+        /* Attachments Styles */
+        .attachments-section {
+            margin: 2rem 0;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .attachments-section h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        .attachments-section h3 i {
+            margin-right: 0.5rem;
+        }
+
+        .attachment-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .attachment-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .attachment-item a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .attachment-item a:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .attachment-item a i {
+            font-size: 1.25rem;
+        }
+
+        .attachment-item a .fa-file-pdf { color: #dc3545; }
+        .attachment-item a .fa-file-word { color: #2b579a; }
+        .attachment-item a .fa-file-excel { color: #217346; }
+        .attachment-item a .fa-file-powerpoint { color: #d24726; }
+        .attachment-item a .fa-file-archive { color: #f0ad4e; }
+        .attachment-item a:hover i { color: white; }
+
         /* Image Gallery Styles */
         .image-gallery-section {
             margin: 2rem 0;
@@ -617,6 +675,41 @@
                         <div class="markdown-content">
                             {{ article.content | markdown | safe }}
                         </div>
+                        {% endif %}
+
+                        <!-- Article Attachments -->
+                        {% if article.attachments %}
+                        {% set attachments = article.attachments | fromjson %}
+                        {% if attachments %}
+                        <div class="attachments-section">
+                            <h3><i class="fas fa-paperclip"></i> Attachments</h3>
+                            <ul class="attachment-list">
+                                {% for att in attachments %}
+                                <li class="attachment-item">
+                                    <a href="{{ att.path }}" target="_blank" download>
+                                        {% set ext = att.name.split('.')[-1].lower() %}
+                                        {% if ext == 'pdf' %}
+                                        <i class="fas fa-file-pdf"></i>
+                                        {% elif ext in ['doc', 'docx'] %}
+                                        <i class="fas fa-file-word"></i>
+                                        {% elif ext in ['xls', 'xlsx'] %}
+                                        <i class="fas fa-file-excel"></i>
+                                        {% elif ext in ['ppt', 'pptx'] %}
+                                        <i class="fas fa-file-powerpoint"></i>
+                                        {% elif ext == 'zip' %}
+                                        <i class="fas fa-file-archive"></i>
+                                        {% elif ext in ['txt', 'csv'] %}
+                                        <i class="fas fa-file-alt"></i>
+                                        {% else %}
+                                        <i class="fas fa-file"></i>
+                                        {% endif %}
+                                        <span>{{ att.name }}</span>
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
                         {% endif %}
 
                         <!-- Article Images Gallery -->
