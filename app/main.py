@@ -261,25 +261,51 @@ async def save_uploaded_image(image: UploadFile) -> str:
     """Save uploaded image to persistent storage and return relative path"""
     if not image or not image.filename:
         return None
-    
+
     # Create images directory in persistent storage
     images_dir = Path("/data/images")
     images_dir.mkdir(exist_ok=True)
-    
+
     # Generate unique filename
     file_extension = Path(image.filename).suffix.lower()
     unique_filename = f"{secrets.token_hex(8)}{file_extension}"
     file_path = images_dir / unique_filename
-    
+
     # Save the uploaded file
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
-        
+
         # Return relative path for URL serving
         return f"/images/{unique_filename}"
     except Exception as e:
         logging.error(f"Failed to save image: {e}")
+        return None
+
+ALLOWED_FILE_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv', '.zip'}
+
+async def save_uploaded_file(file: UploadFile) -> dict:
+    """Save uploaded file to persistent storage and return metadata dict"""
+    if not file or not file.filename:
+        return None
+
+    file_extension = Path(file.filename).suffix.lower()
+    if file_extension not in ALLOWED_FILE_EXTENSIONS:
+        logging.warning(f"Rejected file upload with extension: {file_extension}")
+        return None
+
+    files_dir = Path("/data/files")
+    files_dir.mkdir(exist_ok=True)
+
+    unique_filename = f"{secrets.token_hex(8)}{file_extension}"
+    file_path = files_dir / unique_filename
+
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"name": file.filename, "path": f"/files/{unique_filename}"}
+    except Exception as e:
+        logging.error(f"Failed to save file: {e}")
         return None
 
 # Initialize database on startup
@@ -293,10 +319,19 @@ async def startup_event():
         images_dir = Path("/data/images")
         images_dir.mkdir(exist_ok=True)
         logging.info("Images directory ensured")
-        
+
+        # Create files directory for attachments
+        files_dir = Path("/data/files")
+        files_dir.mkdir(exist_ok=True)
+        logging.info("Files directory ensured")
+
         # Mount images directory if it exists now
         if images_dir.exists():
             app.mount("/images", StaticFiles(directory="/data/images"), name="images")
+
+        # Mount files directory for attachment downloads
+        if files_dir.exists():
+            app.mount("/files", StaticFiles(directory="/data/files"), name="files")
             
     except Exception as e:
         logging.error(f"Startup initialization failed, but continuing: {e}")
@@ -1226,6 +1261,19 @@ async def admin_wm(request: Request):
                 except Exception as e:
                     logging.error(f"Error handling image uploads: {e}")
 
+                # Handle multiple file attachments
+                attachment_list = []
+                try:
+                    if 'attachments' in form:
+                        attachments = form.getlist('attachments')
+                        for attachment in attachments:
+                            if hasattr(attachment, 'filename') and attachment.filename:
+                                file_meta = await save_uploaded_file(attachment)
+                                if file_meta:
+                                    attachment_list.append(file_meta)
+                except Exception as e:
+                    logging.error(f"Error handling attachment uploads: {e}")
+
                 article_data = {
                     'title': form.get('title'),
                     'author': form.get('author'),
@@ -1235,7 +1283,8 @@ async def admin_wm(request: Request):
                     'content': form.get('content'),
                     'slug': form.get('slug'),
                     'status': form.get('status', 'published'),
-                    'images': json.dumps(image_paths) if image_paths else None
+                    'images': json.dumps(image_paths) if image_paths else None,
+                    'attachments': json.dumps(attachment_list) if attachment_list else None
                 }
 
                 result = create_article(article_data)
@@ -1257,9 +1306,23 @@ async def admin_wm(request: Request):
                 except Exception as e:
                     logging.error(f"Error handling image uploads during update: {e}")
 
-                # Get current article to preserve existing images if no new ones uploaded
+                # Handle file attachment uploads for updates
+                attachment_list = []
+                try:
+                    if 'attachments' in form:
+                        attachments = form.getlist('attachments')
+                        for attachment in attachments:
+                            if hasattr(attachment, 'filename') and attachment.filename:
+                                file_meta = await save_uploaded_file(attachment)
+                                if file_meta:
+                                    attachment_list.append(file_meta)
+                except Exception as e:
+                    logging.error(f"Error handling attachment uploads during update: {e}")
+
+                # Get current article to preserve existing images/attachments if no new ones uploaded
                 current_article = get_article_by_id(article_id)
                 final_images = json.dumps(image_paths) if image_paths else current_article.get('images')
+                final_attachments = json.dumps(attachment_list) if attachment_list else current_article.get('attachments')
 
                 article_data = {
                     'title': form.get('title'),
@@ -1270,7 +1333,8 @@ async def admin_wm(request: Request):
                     'content': form.get('content'),
                     'slug': form.get('slug'),
                     'status': form.get('status', 'published'),
-                    'images': final_images
+                    'images': final_images,
+                    'attachments': final_attachments
                 }
 
                 result = update_article(article_id, article_data)

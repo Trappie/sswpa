@@ -37,9 +37,17 @@ def init_database():
                 )
             """)
             
+            # Schema migrations - these run every startup
+            # Add attachments column to articles if it doesn't exist
+            try:
+                cursor.execute("ALTER TABLE articles ADD COLUMN attachments TEXT")
+                logging.info("Added attachments column to articles table")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
             conn.commit()
             logging.info(f"Database initialized at {DATABASE_PATH}")
-            
+
     except Exception as e:
         logging.error(f"Failed to initialize database: {e}")
         raise
@@ -749,13 +757,13 @@ def create_article(article_data: dict) -> int:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO articles (
-                    title, author, type, tags, description, content, slug, status, images
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    title, author, type, tags, description, content, slug, status, images, attachments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 article_data['title'], article_data['author'], article_data['type'],
                 article_data.get('tags'), article_data['description'], article_data.get('content'),
                 article_data['slug'], article_data.get('status', 'published'),
-                article_data.get('images')
+                article_data.get('images'), article_data.get('attachments')
             ))
             conn.commit()
             return cursor.lastrowid
@@ -771,14 +779,14 @@ def update_article(article_id: int, article_data: dict) -> bool:
             cursor.execute("""
                 UPDATE articles SET
                     title = ?, author = ?, type = ?, tags = ?, description = ?,
-                    content = ?, slug = ?, status = ?, images = ?,
+                    content = ?, slug = ?, status = ?, images = ?, attachments = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (
                 article_data['title'], article_data['author'], article_data['type'],
                 article_data.get('tags'), article_data['description'], article_data.get('content'),
                 article_data['slug'], article_data.get('status', 'published'),
-                article_data.get('images'), article_id
+                article_data.get('images'), article_data.get('attachments'), article_id
             ))
             conn.commit()
             return cursor.rowcount > 0

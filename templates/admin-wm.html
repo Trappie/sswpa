@@ -1072,6 +1072,17 @@
                     <small>Select multiple images for this article</small>
                 </div>
 
+                <div class="form-group">
+                    <label for="a_attachments">Attachments</label>
+                    <input type="file" id="a_attachments" name="attachments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip">
+                    <small>Upload PDF, Word, Excel, PowerPoint, or other documents</small>
+                    <div id="existing_attachments" style="margin-top: 8px; display: none;">
+                        <small><strong>Current attachments:</strong></small>
+                        <ul id="existing_attachments_list" style="margin: 4px 0 0 0; padding-left: 20px; font-size: 0.85rem; color: #666;"></ul>
+                        <small style="color: #999;">Uploading new files will replace existing attachments</small>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button type="submit" id="articleSubmitBtn" class="btn btn-primary">Create Article</button>
                     <button type="button" class="btn btn-secondary" onclick="hideArticleModal()">Cancel</button>
@@ -1385,6 +1396,25 @@
                         document.getElementById('a_content').value = data.content || '';
                         document.getElementById('a_tags').value = data.tags || '';
                         document.getElementById('a_slug').value = data.slug || '';
+
+                        // Show existing attachments if any
+                        const attachContainer = document.getElementById('existing_attachments');
+                        const attachList = document.getElementById('existing_attachments_list');
+                        if (data.attachments) {
+                            try {
+                                const attachments = JSON.parse(data.attachments);
+                                if (attachments && attachments.length > 0) {
+                                    attachList.innerHTML = attachments.map(a => `<li><a href="${a.path}" target="_blank">${a.name}</a></li>`).join('');
+                                    attachContainer.style.display = 'block';
+                                } else {
+                                    attachContainer.style.display = 'none';
+                                }
+                            } catch(e) {
+                                attachContainer.style.display = 'none';
+                            }
+                        } else {
+                            attachContainer.style.display = 'none';
+                        }
                     })
                     .catch(error => {
                         console.error('Error fetching article data:', error);
@@ -1397,6 +1427,7 @@
                 action.value = 'create_article';
                 form.reset();
                 document.getElementById('article_id').value = '';
+                document.getElementById('existing_attachments').style.display = 'none';
             }
 
             modal.style.display = 'block';
