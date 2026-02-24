@@ -85,7 +85,7 @@ def validate_program_data(data: Dict[str, Any]) -> bool:
             return False
         
         if item_type == 'piece':
-            required_fields = ['title', 'composer', 'years']
+            required_fields = ['title', 'composer']
             for field in required_fields:
                 if field not in item:
                     print(f"错误: items[{i}] (曲目) 缺少必需字段 '{field}'")
@@ -114,9 +114,12 @@ def format_piece(item: Dict[str, Any]) -> str:
     years = item['years']
     title = item['title']
     
+    composer_line = f"#### *{composer.upper()}*"
+    if years:
+        composer_line += f" ({years})"
     lines = [
         f"### **{title}**",
-        f"#### *{composer.upper()}* ({years})"
+        composer_line
     ]
     
     # 如果有乐章，直接输出，不做任何转换
