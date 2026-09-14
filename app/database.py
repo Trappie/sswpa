@@ -416,7 +416,7 @@ def create_recital(recital_data: dict) -> int:
             default_tickets = [
                 {
                     'name': 'Adult',
-                    'price_cents': 2500,  # $25.00
+                    'price_cents': 3000,  # $30.00
                     'description': 'General admission for adults',
                     'max_quantity': 10,
                     'sort_order': 1,
@@ -424,7 +424,7 @@ def create_recital(recital_data: dict) -> int:
                 },
                 {
                     'name': 'Student',
-                    'price_cents': 1000,  # $10.00
+                    'price_cents': 1500,  # $15.00
                     'description': 'Student discount',
                     'max_quantity': 10,
                     'sort_order': 2,

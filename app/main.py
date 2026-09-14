@@ -1161,7 +1161,7 @@ async def admin_wm(request: Request):
                     'image_url': image_path
                 }
                 result = create_recital(recital_data)
-                message = "Recital created successfully with default Adult ($25) and Student ($10) tickets!" if result else "Failed to create recital"
+                message = "Recital created successfully with default Adult ($30) and Student ($15) tickets!" if result else "Failed to create recital"
             
             elif action == "update_recital":
                 recital_id = int(form.get('recital_id'))
