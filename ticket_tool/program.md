@@ -19,16 +19,20 @@ IV. Rhapsody in E-flat major — Allegro risoluto
 ---
 #### *— INTERMISSION —*
 ---
-### **Gaspard de la nuit · Three poems for piano after Aloysius Bertrand**
-#### *MAURICE RAVEL* (1875-1937)
-I. Ondine
-II. Le Gibet
-III. Scarbo
----
-### **Piano Sonata No. 3 in F-sharp minor, Op. 23**
-#### *ALEXANDER SCRIABIN* (1872-1915)
-I. Drammatico
-II. Allegretto
-III. Andante
-IV. Presto con fuoco
+### **Symphonic Études, Op. 13**
+#### *ROBERT SCHUMANN* (1810-1856)
+Thema — Andante
+Variation 1 — Un poco piu vivo
+Variation 2
+Variation 3
+Variation 4
+Variation 5
+Variation 6
+Variation 7
+Variation 5 (op. posth.)
+Variation 4 (op. posth.)
+Étude 9
+Variation 8
+Variation 9
+Finale
 ---

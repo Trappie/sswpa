@@ -35,25 +35,24 @@
     },
     {
       "type": "piece",
-      "title": "Gaspard de la nuit · Three poems for piano after Aloysius Bertrand",
-      "composer": "maurice ravel",
-      "years": "1875-1937",
+      "title": "Symphonic Études, Op. 13",
+      "composer": "robert schumann",
+      "years": "1810-1856",
       "movements": [
-        "I. Ondine",
-        "II. Le Gibet",
-        "III. Scarbo"
-      ]
-    },
-    {
-      "type": "piece",
-      "title": "Piano Sonata No. 3 in F-sharp minor, Op. 23",
-      "composer": "alexander scriabin",
-      "years": "1872-1915",
-      "movements": [
-        "I. Drammatico",
-        "II. Allegretto",
-        "III. Andante",
-        "IV. Presto con fuoco"
+        "Thema — Andante",
+        "Variation 1 — Un poco piu vivo",
+        "Variation 2",
+        "Variation 3",
+        "Variation 4",
+        "Variation 5",
+        "Variation 6",
+        "Variation 7",
+        "Variation 5 (op. posth.)",
+        "Variation 4 (op. posth.)",
+        "Étude 9",
+        "Variation 8",
+        "Variation 9",
+        "Finale"
       ]
     }
   ]
