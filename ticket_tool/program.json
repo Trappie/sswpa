@@ -2,24 +2,32 @@
   "items": [
     {
       "type": "piece",
-      "title": "SONATA Op.31, No.1",
+      "title": "Fantasia in D minor, K. 397",
+      "composer": "wolfgang amadeus mozart",
+      "years": "1756-1791"
+    },
+    {
+      "type": "piece",
+      "title": "Piano Sonata No. 15 in D major, Op. 28 “Pastorale”",
       "composer": "ludwig van beethoven",
       "years": "1770-1827",
       "movements": [
-        "I. Allegro vivace",
-        "II. Adagio grazioso",
-        "III. Rondo. Allegretto"
+        "I. Allegro",
+        "II. Andante",
+        "III. Scherzo: Allegro vivace",
+        "IV. Rondo: Allegro ma non troppo"
       ]
     },
     {
       "type": "piece",
-      "title": "SONATA Op.31, No.2",
-      "composer": "ludwig van beethoven",
-      "years": "1770-1827",
+      "title": "Four Piano Pieces, Op. 119",
+      "composer": "johannes brahms",
+      "years": "1833-1897",
       "movements": [
-        "I. Largo-Allegro",
-        "II. Adagio",
-        "III. Allegretto"
+        "I. Intermezzo in B minor — Adagio",
+        "II. Intermezzo in E minor — Andantino un poco agitato",
+        "III. Intermezzo in C major — Grazioso e giocoso",
+        "IV. Rhapsody in E-flat major — Allegro risoluto"
       ]
     },
     {
@@ -27,33 +35,25 @@
     },
     {
       "type": "piece",
-      "title": "\"EL PELELE\", from Goyescas",
-      "composer": "enrique granados",
-      "years": "1867-1916"
-    },
-    {
-      "type": "piece",
-      "title": "SCÈNES d’ENFANTS: No.5",
-      "composer": "frederic mompou",
-      "years": "1893-1987"
-    },
-    {
-      "type": "piece",
-      "title": "\"EL PUERTO\", from Iberia",
-      "composer": "isaac albéniz",
-      "years": "1860-1909"
-    },
-    {
-      "type": "piece",
-      "title": "LE BAISER de l’ENFANT-JÉSUS",
-      "composer": "olivier messiaen",
-      "years": "1908-1992"
-    },
-    {
-      "type": "piece",
-      "title": "LA VALSE",
-      "composer": "maurice ravel",
-      "years": "1875-1937"
+      "title": "Symphonic Études, Op. 13",
+      "composer": "robert schumann",
+      "years": "1810-1856",
+      "movements": [
+        "Thema — Andante",
+        "Variation 1 — Un poco piu vivo",
+        "Variation 2",
+        "Variation 3",
+        "Variation 4",
+        "Variation 5",
+        "Variation 6",
+        "Variation 7",
+        "Variation 5 (op. posth.)",
+        "Variation 4 (op. posth.)",
+        "Étude 9",
+        "Variation 8",
+        "Variation 9",
+        "Finale"
+      ]
     }
   ]
 }

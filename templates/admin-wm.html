@@ -663,7 +663,7 @@
                         <div>
                             <h4>Recitals Management</h4>
                             <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-                                <i class="fas fa-info-circle"></i> New recitals automatically include Adult ($25) and Student ($10) tickets
+                                <i class="fas fa-info-circle"></i> New recitals automatically include Adult ($30) and Student ($15) tickets
                             </p>
                         </div>
                         <button onclick="showRecitalModal()" class="btn" style="width: auto;">Add New Recital</button>
@@ -858,7 +858,7 @@
             <h3 id="recitalModalTitle">Add New Recital</h3>
             <div id="recitalAutoTicketNotice" style="background: #e8f5e8; border: 1px solid #4caf50; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 14px;">
                 <i class="fas fa-ticket-alt" style="color: #4caf50;"></i> 
-                <strong>Auto-generated tickets:</strong> Adult tickets ($25.00) and Student tickets ($10.00) will be automatically created for this recital.
+                <strong>Auto-generated tickets:</strong> Adult tickets ($30.00) and Student tickets ($15.00) will be automatically created for this recital.
             </div>
             <form method="POST" id="recitalForm" enctype="multipart/form-data">
                 <input type="hidden" id="recital_id" name="recital_id">
@@ -962,7 +962,7 @@
                     </div>
                     <div class="form-group">
                         <label for="t_price">Price ($)*:</label>
-                        <input type="number" id="t_price" name="price" step="0.01" min="0" required placeholder="25.00">
+                        <input type="number" id="t_price" name="price" step="0.01" min="0" required placeholder="30.00">
                     </div>
                 </div>
                 
