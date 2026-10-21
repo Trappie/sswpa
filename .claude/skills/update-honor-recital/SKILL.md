@@ -52,5 +52,4 @@ One paragraph: `Open to all SSWPA Young Artists, the YYYY-YY Honors Recitals wil
 1. Confirm the extracted info with the user (season, 4 dates with weekdays, venue + address, deadline). Wait for a yes before editing.
 2. Edit the two files above.
 3. `grep -rn -E "<old season>|<old venue>" templates/` to confirm no stale honor-recital references remain. Hits on Heinz Hall / Audition / Artist Recital pages are expected and must be left alone.
-4. Run the app locally (`/run` skill or the project's usual dev command) and open `/young-artists/honors` and `/young-artists/about` to eyeball the result.
-5. Summarize the diff for the user. Do **not** commit; the user commits themselves.
+4. Tell the user how to preview locally and let them run it themselves; do not start it unprompted. The script that works (verified Oct 2026) is `./run-local.sh` (builds the Docker image and starts container `sswpa-local` on http://localhost:8000; stop it with `./stop-local.sh`). Pages to check: `/young-artists/honors` and `/young-artists/about`.5. Summarize the diff for the user. Do **not** commit; the user commits themselves.
