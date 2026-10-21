@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Edit(/.claude/skills/upgrade-caddy/**)"
+      "Edit(/.claude/skills/upgrade-caddy/**)",
+      "Edit(/.claude/skills/update-honor-recital/**)",
+      "Edit(/.claude/skills/update-heinz-hall/**)"
     ]
   }
 }
