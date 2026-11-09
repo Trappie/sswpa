@@ -2,58 +2,102 @@
   "items": [
     {
       "type": "piece",
-      "title": "Fantasia in D minor, K. 397",
-      "composer": "wolfgang amadeus mozart",
-      "years": "1756-1791"
+      "title": "Valse lente",
+      "composer": "mel bonis",
+      "years": "1858-1937"
     },
     {
       "type": "piece",
-      "title": "Piano Sonata No. 15 in D major, Op. 28 “Pastorale”",
-      "composer": "ludwig van beethoven",
-      "years": "1770-1827",
-      "movements": [
-        "I. Allegro",
-        "II. Andante",
-        "III. Scherzo: Allegro vivace",
-        "IV. Rondo: Allegro ma non troppo"
-      ]
+      "title": "Interlude et Bacchanale",
+      "composer": "mel bonis",
+      "years": "1858-1937"
     },
     {
       "type": "piece",
-      "title": "Four Piano Pieces, Op. 119",
-      "composer": "johannes brahms",
-      "years": "1833-1897",
-      "movements": [
-        "I. Intermezzo in B minor — Adagio",
-        "II. Intermezzo in E minor — Andantino un poco agitato",
-        "III. Intermezzo in C major — Grazioso e giocoso",
-        "IV. Rhapsody in E-flat major — Allegro risoluto"
-      ]
+      "title": "Idylle arabe",
+      "composer": "cécile chaminade",
+      "years": "1857-1944"
+    },
+    {
+      "type": "piece",
+      "title": "Danse hindoue",
+      "composer": "cécile chaminade",
+      "years": "1857-1944"
+    },
+    {
+      "type": "piece",
+      "title": "Rhapsody No. 2 in D major (arr. Marius Sireteanu)",
+      "composer": "george enescu",
+      "years": "1881-1955"
+    },
+    {
+      "type": "piece",
+      "title": "Suita din Dobrogea (arr. Mada & Hugh)",
+      "composer": "traditional folk"
     },
     {
       "type": "intermission"
     },
     {
       "type": "piece",
-      "title": "Symphonic Études, Op. 13",
-      "composer": "robert schumann",
-      "years": "1810-1856",
+      "title": "Three Preludes (arr. Mada & Hugh)",
+      "composer": "george gershwin",
+      "years": "1898-1937"
+    },
+    {
+      "type": "piece",
+      "title": "Hoe-Down, from Rodeo (arr. Mada & Hugh)",
+      "composer": "aaron copland",
+      "years": "1900-1990"
+    },
+    {
+      "type": "piece",
+      "title": "Serenade No. 8, Op. 62",
+      "composer": "vincent persichetti",
+      "years": "1915-1987",
       "movements": [
-        "Thema — Andante",
-        "Variation 1 — Un poco piu vivo",
-        "Variation 2",
-        "Variation 3",
-        "Variation 4",
-        "Variation 5",
-        "Variation 6",
-        "Variation 7",
-        "Variation 5 (op. posth.)",
-        "Variation 4 (op. posth.)",
-        "Étude 9",
-        "Variation 8",
-        "Variation 9",
-        "Finale"
+        "I. A bene placido",
+        "II. Con grazia",
+        "III. Con calore",
+        "IV. Semplice"
       ]
+    },
+    {
+      "type": "piece",
+      "title": "Coreopsis (arr. Po-Sim Head and Kowoon Lee)",
+      "composer": "florence price",
+      "years": "1888-1953"
+    },
+    {
+      "type": "piece",
+      "title": "Selections from Souvenirs, Op. 28",
+      "composer": "samuel barber",
+      "years": "1910-1981",
+      "movements": [
+        "I. Waltz",
+        "II. Pas de deux",
+        "III. Two Step",
+        "IV. Hesitation-Tango"
+      ]
+    },
+    {
+      "type": "piece",
+      "title": "Table d'Hôte – Musical Delicacies for Piano 4 Hands",
+      "composer": "vee lawnhurst and muriel pollock",
+      "movements": [
+        "I. Hors d'oeuvres",
+        "II. Soup",
+        "III. Entrée",
+        "IV. Salad",
+        "V. Parfait",
+        "VI. Demi-Tasse"
+      ]
+    },
+    {
+      "type": "piece",
+      "title": "\"America\", from West Side Story (arr. Mada & Hugh)",
+      "composer": "leonard bernstein",
+      "years": "1918-1990"
     }
   ]
 }

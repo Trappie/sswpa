@@ -85,7 +85,7 @@ def validate_program_data(data: Dict[str, Any]) -> bool:
             return False
         
         if item_type == 'piece':
-            required_fields = ['title', 'composer', 'years']
+            required_fields = ['title', 'composer']
             for field in required_fields:
                 if field not in item:
                     print(f"错误: items[{i}] (曲目) 缺少必需字段 '{field}'")
@@ -93,7 +93,12 @@ def validate_program_data(data: Dict[str, Any]) -> bool:
                 if not isinstance(item[field], str) or not item[field].strip():
                     print(f"错误: items[{i}] 的 '{field}' 字段不能为空")
                     return False
-            
+
+            # years是可选的（如传统民谣没有年份），但如果存在必须是字符串
+            if 'years' in item and not isinstance(item['years'], str):
+                print(f"错误: items[{i}] 的 'years' 必须是字符串")
+                return False
+
             # movements是可选的，但如果存在必须是数组
             if 'movements' in item:
                 if not isinstance(item['movements'], list):
@@ -111,12 +116,16 @@ def validate_program_data(data: Dict[str, Any]) -> bool:
 def format_piece(item: Dict[str, Any]) -> str:
     """格式化单个曲目为markdown"""
     composer = item['composer']
-    years = item['years']
+    years = item.get('years', '').strip()
     title = item['title']
-    
+
+    composer_line = f"#### *{composer.upper()}*"
+    if years:
+        composer_line += f" ({years})"
+
     lines = [
         f"### **{title}**",
-        f"#### *{composer.upper()}* ({years})"
+        composer_line
     ]
     
     # 如果有乐章，直接输出，不做任何转换
