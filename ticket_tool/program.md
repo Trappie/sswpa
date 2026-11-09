@@ -1,38 +1,57 @@
 ## Piano Recital Program
 ---
-### **Fantasia in D minor, K. 397**
-#### *WOLFGANG AMADEUS MOZART* (1756-1791)
+### **Valse lente**
+#### *MEL BONIS* (1858-1937)
 ---
-### **Piano Sonata No. 15 in D major, Op. 28 “Pastorale”**
-#### *LUDWIG VAN BEETHOVEN* (1770-1827)
-I. Allegro
-II. Andante
-III. Scherzo: Allegro vivace
-IV. Rondo: Allegro ma non troppo
+### **Interlude et Bacchanale**
+#### *MEL BONIS* (1858-1937)
 ---
-### **Four Piano Pieces, Op. 119**
-#### *JOHANNES BRAHMS* (1833-1897)
-I. Intermezzo in B minor — Adagio
-II. Intermezzo in E minor — Andantino un poco agitato
-III. Intermezzo in C major — Grazioso e giocoso
-IV. Rhapsody in E-flat major — Allegro risoluto
+### **Idylle arabe**
+#### *CÉCILE CHAMINADE* (1857-1944)
+---
+### **Danse hindoue**
+#### *CÉCILE CHAMINADE* (1857-1944)
+---
+### **Rhapsody No. 2 in D major (arr. Marius Sireteanu)**
+#### *GEORGE ENESCU* (1881-1955)
+---
+### **Suita din Dobrogea (arr. Mada & Hugh)**
+#### *TRADITIONAL FOLK*
 ---
 #### *— INTERMISSION —*
 ---
-### **Symphonic Études, Op. 13**
-#### *ROBERT SCHUMANN* (1810-1856)
-Thema — Andante
-Variation 1 — Un poco piu vivo
-Variation 2
-Variation 3
-Variation 4
-Variation 5
-Variation 6
-Variation 7
-Variation 5 (op. posth.)
-Variation 4 (op. posth.)
-Étude 9
-Variation 8
-Variation 9
-Finale
+### **Three Preludes (arr. Mada & Hugh)**
+#### *GEORGE GERSHWIN* (1898-1937)
+---
+### **Hoe-Down, from Rodeo (arr. Mada & Hugh)**
+#### *AARON COPLAND* (1900-1990)
+---
+### **Serenade No. 8, Op. 62**
+#### *VINCENT PERSICHETTI* (1915-1987)
+I. A bene placido
+II. Con grazia
+III. Con calore
+IV. Semplice
+---
+### **Coreopsis (arr. Po-Sim Head and Kowoon Lee)**
+#### *FLORENCE PRICE* (1888-1953)
+---
+### **Selections from Souvenirs, Op. 28**
+#### *SAMUEL BARBER* (1910-1981)
+I. Waltz
+II. Pas de deux
+III. Two Step
+IV. Hesitation-Tango
+---
+### **Table d'Hôte – Musical Delicacies for Piano 4 Hands**
+#### *VEE LAWNHURST AND MURIEL POLLOCK*
+I. Hors d'oeuvres
+II. Soup
+III. Entrée
+IV. Salad
+V. Parfait
+VI. Demi-Tasse
+---
+### **"America", from West Side Story (arr. Mada & Hugh)**
+#### *LEONARD BERNSTEIN* (1918-1990)
 ---
